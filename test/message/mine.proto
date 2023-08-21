@@ -1,0 +1,72 @@
+syntax = "proto3";
+package test.mine;
+
+enum Corpus
+{
+    CORPUS_UNSPECIFIED  = 0;
+    CORPUS_UNIVERSAL    = 1;
+    CORPUS_WEB          = 2;
+    CORPUS_IMAGES       = 3;
+    CORPUS_LOCAL        = 4;
+    CORPUS_NEWS         = 5;
+    CORPUS_PRODUCTS     = 6;
+    CORPUS_VIDEO        = 7;
+};
+
+message TestInnerObject
+{
+    optional int32      int32_value         = 1;
+};
+
+message TestObject
+{
+    optional int32      int32_value         = 1;
+    optional uint32     uint32_value        = 2;
+    optional sint32     sint32_value        = 3;
+    optional fixed32    fixed32_value       = 4;
+    optional sfixed32   sfixed32_value      = 5;
+
+    optional int64      int64_value         = 6;
+    optional uint64     uint64_value        = 7;
+    optional sint64     sint64_value        = 8;
+    optional fixed64    fixed64_value       = 9;
+    optional sfixed64   sfixed64_value      = 10;
+
+    optional float      float_value         = 11;
+    optional double     double_value        = 12;
+    optional bool       bool_value          = 13;
+    optional Corpus     enum_value          = 14;
+    optional string     string_value        = 15;
+    optional bytes      bytes_value         = 16;
+    optional TestInnerObject obj_value      = 17;
+
+    repeated int32      int32_repeat        = 31;
+    repeated uint32     uint32_repeat       = 32;
+    repeated sint32     sint32_repeat       = 33;
+    repeated fixed32    fixed32_repeat      = 34;
+    repeated sfixed32   sfixed32_repeat     = 35;
+
+    repeated int64      int64_repeat        = 36;
+    repeated uint64     uint64_repeat       = 37;
+    repeated sint64     sint64_repeat       = 38;
+    repeated fixed64    fixed64_repeat      = 39;
+    repeated sfixed64   sfixed64_repeat     = 40;
+
+    repeated float      float_repeat        = 41;
+    repeated double     double_repeat       = 42;
+    repeated bool       bool_repeat         = 43;
+    repeated Corpus     enum_repeat         = 44;
+    repeated string     string_repeat       = 45;
+    repeated bytes      bytes_repeat        = 46;
+    repeated TestInnerObject obj_repeat     = 47;
+
+    map<sint32, sint32> map_i2i             = 61;
+    map<sint32, Corpus> map_i2e             = 62;
+    // Key in map fields cannot be enum types.
+    // map<Corpus, int32> map_e2i           = 63;
+    map<string, uint32> map_s2u             = 64;
+    map<uint32, string> map_u2s             = 65;
+    map<string, string> map_s2s             = 66;
+    map<sint32, TestInnerObject> map_i2o    = 67;
+    map<string, TestInnerObject> map_s2o    = 68;
+};
