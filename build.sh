@@ -1,11 +1,15 @@
 #/bin/bash
 
+INSTALL_PATH=
 RELEASE_MODE=0
 BUILD_TEST=0
 PROCESS_NUM=1
 
-while getopts "rtj:" OPTION; do
+while getopts "i:rtj:" OPTION; do
     case $OPTION in
+        "i")
+            INSTALL_PATH=$OPTARG
+            ;;
         "r")
             RELEASE_MODE=1
             ;;
@@ -22,18 +26,21 @@ while getopts "rtj:" OPTION; do
     esac
 done
 
-CMAKE_ARG=
-
-if [ $RELEASE_MODE == 0 ]; then
-CMAKE_ARG+="-DCMAKE_BUILD_TYPE=Debug "
-else
-CMAKE_ARG+=" -DCMAKE_BUILD_TYPE=RelWithDebInfo "
+if [ ! -z $INSTALL_PATH ]; then
+    if [ ! -d $INSTALL_PATH ]; then
+        mkdir -p $INSTALL_PATH
+    fi
+    CMAKE_ARG="-DCMAKE_INSTALL_PREFIX=$INSTALL_PATH"
 fi
 
-if [ $BUILD_TEST == 0 ]; then
-CMAKE_ARG+="-DBUILD_TEST=no "
+if [ $RELEASE_MODE == 0 ]; then
+    CMAKE_ARG+=" -DCMAKE_BUILD_TYPE=Debug"
 else
-CMAKE_ARG+="-DBUILD_TEST=yes "
+    CMAKE_ARG+=" -DCMAKE_BUILD_TYPE=RelWithDebInfo"
+fi
+
+if [ $BUILD_TEST != 0 ]; then
+    CMAKE_ARG+=" -DBUILD_TEST=ON"
 fi
 
 #echo "CMAKE_ARG: $CMAKE_ARG"
@@ -44,4 +51,8 @@ else
     rm build/CMakeCache.txt 2>/dev/null
 fi
 
-cd build && cmake $CMAKE_ARG .. && make -j $PROCESS_NUM
+cd build && cmake $CMAKE_ARG .. && make -j $PROCESS_NUM || exit 1
+
+if [ ! -z $INSTALL_PATH ]; then
+    make install
+fi

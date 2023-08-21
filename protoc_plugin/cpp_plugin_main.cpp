@@ -17,7 +17,7 @@ public:
 };
 
 bool MrpcCppGenerator::Generate(const google::protobuf::FileDescriptor* file_desc,
-        const std::string& parameter,
+        const std::string& /*parameter*/,
         google::protobuf::compiler::GeneratorContext* ctx,
         std::string* error) const
 {

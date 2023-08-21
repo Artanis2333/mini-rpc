@@ -13,7 +13,7 @@ CppEnum::CppEnum(const std::string& ns, const std::string& enum_name) :
 {
 }
 
-bool CppEnum::Parse(const google::protobuf::EnumDescriptor* desc, std::string* error)
+bool CppEnum::Parse(const google::protobuf::EnumDescriptor* desc, std::string* /*error*/)
 {
     for (int i = 0; i < desc->value_count(); ++i)
     {
