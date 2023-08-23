@@ -909,6 +909,7 @@ void CppField::OutputParseFromBytesMethod(google::protobuf::io::Printer& printer
                     "            case $tag_number$: if (!mrpc::ParseCheckType(type, $field_name$, begin, end)) return false;\n"
                     "                break;\n");
         }
+        /*
         else if (cpp_type_ == mrpc::CPPTYPE_ENUM)
         {
             auto it = kPbTypeToTemplateType.find(proto_type_);
@@ -932,6 +933,7 @@ void CppField::OutputParseFromBytesMethod(google::protobuf::io::Printer& printer
                     "                break;\n"
                     "            }\n");
         }
+        */
         else
         {
             auto it = kPbTypeToTemplateType.find(proto_type_);
@@ -967,6 +969,7 @@ void CppField::OutputParseFromBytesMethod(google::protobuf::io::Printer& printer
                     "            case $tag_number$: if (!mrpc::Parse$container_function_type$CheckType<$template_type$>(type, $field_name$, begin, end)) return false;\n"
                     "                break;\n");
         }
+        /*
         else if (cpp_sub_type_1_ == mrpc::CPPTYPE_ENUM)
         {
             auto it = kPbTypeToTemplateType.find(proto_sub_type_1_);
@@ -991,6 +994,7 @@ void CppField::OutputParseFromBytesMethod(google::protobuf::io::Printer& printer
                     "                break;\n"
                     "            }\n");
         }
+        */
         else
         {
             auto it = kPbTypeToTemplateType.find(proto_sub_type_1_);
@@ -1036,6 +1040,7 @@ void CppField::OutputParseFromBytesMethod(google::protobuf::io::Printer& printer
                     "            case $tag_number$: if (!mrpc::Parse$container_function_type$CheckType<$template_type_key$, $template_type_value$>(type, $field_name$, begin, end)) return false;\n"
                     "                break;\n");
         }
+        /*
         else if (cpp_sub_type_2_ == mrpc::CPPTYPE_ENUM)
         {
             auto it_key = kPbTypeToTemplateType.find(proto_sub_type_1_);
@@ -1062,6 +1067,7 @@ void CppField::OutputParseFromBytesMethod(google::protobuf::io::Printer& printer
                     "                break;\n"
                     "            }\n");
         }
+        */
         else
         {
             auto it_key = kPbTypeToTemplateType.find(proto_sub_type_1_);
@@ -1083,21 +1089,37 @@ void CppField::OutputParseFromBytesMethod(google::protobuf::io::Printer& printer
     }
 }
 
-void CppField::OutputInitDescriptorMethod(google::protobuf::io::Printer& printer,
+void CppField::OutputDescriptorWrapperMember(google::protobuf::io::Printer& printer,
         std::map<std::string, std::string>& vars) const
 {
     vars["field_name"] = field_name_;
     vars["field_name_length"] = std::to_string(field_name_.length());
     vars["cpp_type_name"] = kCppTypeToEnumName[cpp_type_];
 
-    if (cpp_type_ == mrpc::CPPTYPE_MESSAGE)
+    if (cpp_type_ == mrpc::CPPTYPE_ENUM)
     {
-        printer.Print(vars, "    desc.EmplaceField(std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::reflection::OffsetOf($class_name$, $field_name$), $field_name$.GetDescriptor());\n");
+        vars["field_type"] = field_type_name_;
+        printer.Print(vars, "static mrpc::EnumFieldDescriptor $field_name$_field_desc = { std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::OffsetOf($class_name$, $field_name$), $field_type$_GetDescriptor() };\n");
+    }
+    else if (cpp_type_ == mrpc::CPPTYPE_MESSAGE)
+    {
+        vars["field_type"] = field_type_name_;
+        printer.Print(vars, "static mrpc::MessageFieldDescriptor $field_name$_field_desc = { std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::OffsetOf($class_name$, $field_name$), $field_type$::GetClassDescriptor() };\n");
     }
     else
     {
-        printer.Print(vars, "    desc.EmplaceField(std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::reflection::OffsetOf($class_name$, $field_name$));\n");
+        printer.Print(vars, "static mrpc::FieldDescriptor $field_name$_field_desc = { std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::OffsetOf($class_name$, $field_name$) };\n");
     }
+}
+
+void CppField::OutputDescriptorInitializerList(google::protobuf::io::Printer& printer,
+        std::map<std::string, std::string>& vars) const
+{
+    vars["field_name"] = field_name_;
+    vars["field_name_length"] = std::to_string(field_name_.length());
+    vars["cpp_type_name"] = kCppTypeToEnumName[cpp_type_];
+
+    printer.Print(vars, "        &$field_name$_field_desc,\n");
 }
 
 bool CppField::IsNamedType(mrpc::CppType cpp_type)

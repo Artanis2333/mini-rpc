@@ -1,6 +1,9 @@
 syntax = "proto3";
 package test.mine;
 
+//import "mrpc/options.proto";
+//option (mrpc.gen_cpp_reflection) = false;
+
 enum Corpus
 {
     CORPUS_UNSPECIFIED  = 0;

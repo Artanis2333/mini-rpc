@@ -36,8 +36,16 @@ void CppClass::OutputToHeaderFile(google::protobuf::io::Printer& printer,
 {
     // class
     vars["class_name"] = class_name_;
-    printer.Print(vars, "class $class_name$ final : public mrpc::Message\n"
-            "{\n"
+
+    if (gen_cpp_reflection_)
+    {
+        printer.Print(vars, "class $class_name$ final : public mrpc::ReflectableMessage<$class_name$>\n");
+    }
+    else
+    {
+        printer.Print(vars, "class $class_name$ final : public mrpc::Message\n");
+    }
+    printer.Print("{\n"
             "public:\n");
 
     // fields
@@ -54,6 +62,7 @@ void CppClass::OutputToHeaderFile(google::protobuf::io::Printer& printer,
     if (gen_cpp_reflection_)
     {
         printer.Print("    const mrpc::Descriptor* GetDescriptor() const override;\n");
+        printer.Print("    static const mrpc::Descriptor* GetClassDescriptor();\n");
     }
     printer.Print("    void Clear() override;\n"
             "\n");
@@ -79,13 +88,6 @@ void CppClass::OutputToHeaderFile(google::protobuf::io::Printer& printer,
         field.OutputFieldCacheSize(printer, vars);
     }
 
-    if (gen_cpp_reflection_)
-    {
-        printer.Print("    static mrpc::Descriptor descriptor_;\n");
-        printer.Print("\n"
-                "    void InitDescriptor(mrpc::Descriptor& desc) const;\n");
-    }
-
     // class
     printer.Print("};\n"
             "\n");
@@ -102,9 +104,29 @@ void CppClass::OutputToSourceFile(google::protobuf::io::Printer& printer,
     vars["proto_full_name"] = proto_full_name_;
     vars["proto_full_name_length"] = std::to_string(proto_full_name_.length());
 
+    // DescriptorWrapper
     if (gen_cpp_reflection_)
     {
-        printer.Print(vars, "mrpc::Descriptor $namespace$::$class_name$::descriptor_;\n"
+        printer.Print(vars,
+                "namespace $namespace$::$class_name$_DescriptorWrapper\n"
+                "{\n"
+                );
+        for (auto& field : fields_)
+        {
+            field.OutputDescriptorWrapperMember(printer, vars);
+        }
+        printer.Print(vars,
+                "static mrpc::DescriptorImpl<$class_name$> descriptor = { std::string_view(\"$proto_name$\", $proto_name_length$),\n"
+                "    std::string_view(\"$proto_full_name$\", $proto_full_name_length$),\n"
+                "    {\n"
+                );
+        for (auto& field : fields_)
+        {
+            field.OutputDescriptorInitializerList(printer, vars);
+        }
+        printer.Print("    }\n"
+                "};\n"
+                "};\n"
                 "\n");
     }
 
@@ -127,8 +149,12 @@ void CppClass::OutputToSourceFile(google::protobuf::io::Printer& printer,
     {
         printer.Print(vars, "const mrpc::Descriptor* $namespace$::$class_name$::GetDescriptor() const\n"
                 "{\n"
-                "    if (descriptor_.GetName().empty()) InitDescriptor(descriptor_);\n"
-                "    return &descriptor_;\n"
+                "    return GetClassDescriptor();\n"
+                "}\n"
+                "\n");
+        printer.Print(vars, "const mrpc::Descriptor* $namespace$::$class_name$::GetClassDescriptor()\n"
+                "{\n"
+                "    return &$class_name$_DescriptorWrapper::descriptor;\n"
                 "}\n"
                 "\n");
     }
@@ -211,22 +237,6 @@ void CppClass::OutputToSourceFile(google::protobuf::io::Printer& printer,
             "    return result;\n"
             "}\n"
             "\n");
-
-    // method InitDescriptor
-    if (gen_cpp_reflection_)
-    {
-        printer.Print(vars, "void $namespace$::$class_name$::InitDescriptor(mrpc::Descriptor& desc) const\n"
-                "{\n"
-                "    desc.SetName(std::string_view(\"$proto_name$\", $proto_name_length$));\n"
-                "    desc.SetFullName(std::string_view(\"$proto_full_name$\", $proto_full_name_length$));\n"
-                );
-        for (auto& field : fields_)
-        {
-            field.OutputInitDescriptorMethod(printer, vars);
-        }
-        printer.Print("}\n"
-                "\n");
-    }
 }
 
 bool CppClass::HasCppTypeField(mrpc::CppType cpp_type) const

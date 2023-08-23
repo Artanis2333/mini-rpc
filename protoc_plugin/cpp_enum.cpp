@@ -3,6 +3,7 @@
 #include <google/protobuf/io/printer.h>
 
 #include "cpp_enum.h"
+#include "plugin_helper.h"
 
 //
 // CppEnum
@@ -15,6 +16,9 @@ CppEnum::CppEnum(const std::string& ns, const std::string& enum_name) :
 
 bool CppEnum::Parse(const google::protobuf::EnumDescriptor* desc, std::string* /*error*/)
 {
+    proto_name_ = desc->name();
+    proto_full_name_ = desc->full_name();
+
     for (int i = 0; i < desc->value_count(); ++i)
     {
         const google::protobuf::EnumValueDescriptor* value_desc = desc->value(i);
@@ -74,10 +78,15 @@ void CppEnum::OutputToHeaderFile(google::protobuf::io::Printer& printer,
 
     // methods
     printer.Print(vars,
-            "bool $enum_name$_IsValid(int value);\n"
-            "std::string_view $enum_name$_Name($enum_name$ value);\n"
-            "bool $enum_name$_Parse(std::string_view name, $enum_name$& value);\n"
-            "\n");
+            "bool $enum_name$_IsValid(int32_t value);\n"
+            "std::string_view $enum_name$_Name(int32_t value);\n"
+            "bool $enum_name$_Parse(std::string_view name, int32_t& value);\n");
+    if (gen_cpp_reflection_)
+    {
+        printer.Print(vars,
+                "const mrpc::EnumDescriptor* $enum_name$_GetDescriptor();\n");
+    }
+    printer.Print("\n");
 }
 
 void CppEnum::OutputToSourceFile(google::protobuf::io::Printer& printer,
@@ -85,10 +94,30 @@ void CppEnum::OutputToSourceFile(google::protobuf::io::Printer& printer,
 {
     vars["namespace"] = namespace_;
     vars["enum_name"] = enum_name_;
+    vars["proto_name"] = proto_name_;
+    vars["proto_name_length"] = std::to_string(proto_name_.length());
+    vars["proto_full_name"] = proto_full_name_;
+    vars["proto_full_name_length"] = std::to_string(proto_full_name_.length());
+
+    // DescriptorWrapper
+    if (gen_cpp_reflection_)
+    {
+        printer.Print(vars,
+                "namespace $namespace$::$enum_name$_DescriptorWrapper\n"
+                "{\n"
+                "static mrpc::EnumDescriptor descriptor = { std::string_view(\"$proto_name$\", $proto_name_length$),\n"
+                "    std::string_view(\"$proto_full_name$\", $proto_full_name_length$),\n"
+                "    $enum_name$_IsValid,\n"
+                "    $enum_name$_Name,\n"
+                "    $enum_name$_Parse,\n"
+                "};\n"
+                "};\n"
+                "\n");
+    }
 
     // method IsValid
     printer.Print(vars,
-            "bool $namespace$::$enum_name$_IsValid(int value)\n"
+            "bool $namespace$::$enum_name$_IsValid(int32_t value)\n"
             "{\n"
             "    switch (value)\n"
             "    {\n"
@@ -108,7 +137,7 @@ void CppEnum::OutputToSourceFile(google::protobuf::io::Printer& printer,
 
     // method Name
     printer.Print(vars,
-            "std::string_view $namespace$::$enum_name$_Name($enum_name$ value)\n"
+            "std::string_view $namespace$::$enum_name$_Name(int32_t value)\n"
             "{\n"
             "    switch (value)\n"
             "    {\n"
@@ -127,7 +156,7 @@ void CppEnum::OutputToSourceFile(google::protobuf::io::Printer& printer,
 
     // method Parse
     printer.Print(vars,
-            "bool $namespace$::$enum_name$_Parse(std::string_view name, $enum_name$& value)\n"
+            "bool $namespace$::$enum_name$_Parse(std::string_view name, int32_t& value)\n"
             "{\n");
     for (auto& item : name_value_pair_)
     {
@@ -146,4 +175,15 @@ void CppEnum::OutputToSourceFile(google::protobuf::io::Printer& printer,
             "    return false;\n"
             "}\n"
             "\n");
+
+    // method GetDescriptor
+    if (gen_cpp_reflection_)
+    {
+        printer.Print(vars,
+                "const mrpc::EnumDescriptor* $namespace$::$enum_name$_GetDescriptor()\n"
+                "{\n"
+                "    return &$namespace$::$enum_name$_DescriptorWrapper::descriptor;\n"
+                "}\n"
+                "\n");
+    }
 }

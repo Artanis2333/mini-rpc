@@ -48,7 +48,10 @@ public:
     void OutputParseFromBytesMethod(google::protobuf::io::Printer& printer,
             std::map<std::string, std::string>& vars) const;
 
-    void OutputInitDescriptorMethod(google::protobuf::io::Printer& printer,
+    void OutputDescriptorWrapperMember(google::protobuf::io::Printer& printer,
+            std::map<std::string, std::string>& vars) const;
+
+    void OutputDescriptorInitializerList(google::protobuf::io::Printer& printer,
             std::map<std::string, std::string>& vars) const;
 
 private:

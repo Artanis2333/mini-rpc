@@ -20,7 +20,11 @@ while getopts "i:rtj:" OPTION; do
             PROCESS_NUM=$OPTARG
             ;;
         "?")
-            echo "Unknown options."
+            echo "Usage:"
+            echo "  -i install_path     Set install path."
+            echo "  -r                  Build in release mode."
+            echo "  -t                  Build test cases."
+            echo "  -j jobs             Same with make -j."
             exit 1
             ;;
     esac

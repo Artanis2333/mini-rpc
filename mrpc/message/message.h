@@ -24,7 +24,9 @@ public:
     virtual std::string_view GetFullName() const = 0;
 
     // Reflection.
-    virtual const mrpc::Descriptor* GetDescriptor() const;
+    virtual Message* New() const;
+    virtual void CopyFrom(const Message& msg);
+    virtual const Descriptor* GetDescriptor() const;
 
     // Clear data.
     virtual void Clear() = 0;
@@ -59,5 +61,31 @@ protected:
     friend void Serialize<true>(std::string&, Message&);
     friend bool Parse(Message&, const uint8_t*&, const uint8_t* const);
 };
+
+template<typename T>
+class ReflectableMessage : public Message
+{
+public:
+    Message* New() const override;
+    void CopyFrom(const Message& msg) override;
+};
+
+template<typename T>
+Message* ReflectableMessage<T>::New() const
+{
+    return new T;
+}
+
+template<typename T>
+void ReflectableMessage<T>::CopyFrom(const Message& msg)
+{
+    const T* src = dynamic_cast<const T*>(&msg);
+    if (src == nullptr) return;
+
+    T* dst = dynamic_cast<T*>(this);
+    if (dst == nullptr) return;
+
+    *dst = *src;
+}
 
 };

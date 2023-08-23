@@ -3,6 +3,8 @@ package mrpc;
 
 import "google/protobuf/descriptor.proto";
 
+option (gen_cpp_reflection) = false;
+
 enum CppType
 {
     CPPTYPE_UNKNOWN         = 0;

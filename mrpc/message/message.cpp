@@ -1,5 +1,14 @@
 #include <mrpc/message/message.h>
 
+mrpc::Message* mrpc::Message::New() const
+{
+    return nullptr;
+}
+
+void mrpc::Message::CopyFrom(const mrpc::Message& /*msg*/)
+{
+}
+
 const mrpc::Descriptor* mrpc::Message::GetDescriptor() const
 {
     return nullptr;

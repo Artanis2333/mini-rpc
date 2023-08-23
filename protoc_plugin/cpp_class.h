@@ -38,5 +38,5 @@ private:
     std::string proto_name_;
     std::string proto_full_name_;
     std::vector<CppField> fields_;
-    bool gen_cpp_reflection_ = false;;
+    bool gen_cpp_reflection_ = false;
 };
