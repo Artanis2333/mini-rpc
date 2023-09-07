@@ -178,6 +178,7 @@ const mrpc::Message& mrpc::reflection::MapGetMessageValue(const mrpc::FieldDescr
 {
     assert(desc.GetCppType() == CPPTYPE_MAP || desc.GetCppType() == CPPTYPE_UNORDERED_MAP);
     const MapFieldDescriptor* field_desc = dynamic_cast<const MapFieldDescriptor*>(&desc);
+    (void)field_desc;
     assert(field_desc != nullptr);
     assert(field_desc->GetValueCppType() == CPPTYPE_MESSAGE);
     return it.GetValue<Message>();
