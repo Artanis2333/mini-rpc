@@ -197,6 +197,13 @@ bool CppField::Parse(const google::protobuf::FieldDescriptor* desc, std::string*
 
         cpp_type_ = real_cpp_type;
     }
+
+    if (cpp_type_ == mrpc::CPPTYPE_VECTOR && cpp_sub_type_1_ == mrpc::CPPTYPE_BOOL)
+    {
+        *error = desc->full_name() + ": repeated bool fields must not set `mrpc.cpp_type` to `CPPTYPE_VECTOR`";
+        return false;
+    }
+
     // default value
     switch (cpp_type_)
     {
@@ -1096,19 +1103,82 @@ void CppField::OutputDescriptorWrapperMember(google::protobuf::io::Printer& prin
     vars["field_name_length"] = std::to_string(field_name_.length());
     vars["cpp_type_name"] = kCppTypeToEnumName[cpp_type_];
 
-    if (cpp_type_ == mrpc::CPPTYPE_ENUM)
+    if (IsSequenceContainerType(cpp_type_))
     {
-        vars["field_type"] = field_type_name_;
-        printer.Print(vars, "static mrpc::EnumFieldDescriptor $field_name$_field_desc = { std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::OffsetOf($class_name$, $field_name$), $field_type$_GetDescriptor() };\n");
+        vars["field_sub_type_1"] = kCppTypeToEnumName[cpp_sub_type_1_];
+        vars["container_sub_type_1"] = kCppTypeToName[cpp_sub_type_1_];
+
+        if (cpp_type_ == mrpc::CPPTYPE_VECTOR)
+        {
+            vars["container_impl_type"] = "Vector";
+        }
+        else if (cpp_type_ == mrpc::CPPTYPE_LIST)
+        {
+            vars["container_impl_type"] = "List";
+        }
+
+        if (cpp_sub_type_1_ == mrpc::CPPTYPE_ENUM)
+        {
+            vars["field_type"] = field_type_name_;
+            printer.Print(vars, "static mrpc::$container_impl_type$FieldDescriptorImpl<$container_sub_type_1$> $field_name$_field_desc = { std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::OffsetOf($class_name$, $field_name$), $field_sub_type_1$, $field_type$_GetDescriptor() };\n");
+        }
+        else if (cpp_sub_type_1_ == mrpc::CPPTYPE_MESSAGE)
+        {
+            vars["field_type"] = field_type_name_;
+            printer.Print(vars, "static mrpc::$container_impl_type$FieldDescriptorImpl<$field_type$> $field_name$_field_desc = { std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::OffsetOf($class_name$, $field_name$), $field_sub_type_1$, $field_type$::GetClassDescriptor() };\n");
+        }
+        else
+        {
+            printer.Print(vars, "static mrpc::$container_impl_type$FieldDescriptorImpl<$container_sub_type_1$> $field_name$_field_desc = { std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::OffsetOf($class_name$, $field_name$), $field_sub_type_1$ };\n");
+        }
     }
-    else if (cpp_type_ == mrpc::CPPTYPE_MESSAGE)
+    else if (IsAssociativeContainerType(cpp_type_))
     {
-        vars["field_type"] = field_type_name_;
-        printer.Print(vars, "static mrpc::MessageFieldDescriptor $field_name$_field_desc = { std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::OffsetOf($class_name$, $field_name$), $field_type$::GetClassDescriptor() };\n");
+        vars["field_sub_type_1"] = kCppTypeToEnumName[cpp_sub_type_1_];
+        vars["field_sub_type_2"] = kCppTypeToEnumName[cpp_sub_type_2_];
+        vars["container_sub_type_1"] = kCppTypeToName[cpp_sub_type_1_];
+        vars["container_sub_type_2"] = kCppTypeToName[cpp_sub_type_2_];
+
+        if (cpp_type_ == mrpc::CPPTYPE_MAP)
+        {
+            vars["container_impl_type"] = "Map";
+        }
+        else if (cpp_type_ == mrpc::CPPTYPE_UNORDERED_MAP)
+        {
+            vars["container_impl_type"] = "UnorderedMap";
+        }
+
+        if (cpp_sub_type_2_ == mrpc::CPPTYPE_ENUM)
+        {
+            vars["field_type"] = field_type_name_;
+            printer.Print(vars, "static mrpc::$container_impl_type$FieldDescriptorImpl<$container_sub_type_1$, $container_sub_type_2$> $field_name$_field_desc = { std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::OffsetOf($class_name$, $field_name$), $field_sub_type_1$, $field_sub_type_2$, $field_type$_GetDescriptor() };\n");
+        }
+        else if (cpp_sub_type_2_ == mrpc::CPPTYPE_MESSAGE)
+        {
+            vars["field_type"] = field_type_name_;
+            printer.Print(vars, "static mrpc::$container_impl_type$FieldDescriptorImpl<$container_sub_type_1$, $field_type$> $field_name$_field_desc = { std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::OffsetOf($class_name$, $field_name$), $field_sub_type_1$, $field_sub_type_2$, $field_type$::GetClassDescriptor() };\n");
+        }
+        else
+        {
+            printer.Print(vars, "static mrpc::$container_impl_type$FieldDescriptorImpl<$container_sub_type_1$, $container_sub_type_2$> $field_name$_field_desc = { std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::OffsetOf($class_name$, $field_name$), $field_sub_type_1$, $field_sub_type_2$ };\n");
+        }
     }
     else
     {
-        printer.Print(vars, "static mrpc::FieldDescriptor $field_name$_field_desc = { std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::OffsetOf($class_name$, $field_name$) };\n");
+        if (cpp_type_ == mrpc::CPPTYPE_ENUM)
+        {
+            vars["field_type"] = field_type_name_;
+            printer.Print(vars, "static mrpc::EnumFieldDescriptor $field_name$_field_desc = { std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::OffsetOf($class_name$, $field_name$), $field_type$_GetDescriptor() };\n");
+        }
+        else if (cpp_type_ == mrpc::CPPTYPE_MESSAGE)
+        {
+            vars["field_type"] = field_type_name_;
+            printer.Print(vars, "static mrpc::MessageFieldDescriptor $field_name$_field_desc = { std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::OffsetOf($class_name$, $field_name$), $field_type$::GetClassDescriptor() };\n");
+        }
+        else
+        {
+            printer.Print(vars, "static mrpc::FieldDescriptor $field_name$_field_desc = { std::string_view(\"$field_name$\", $field_name_length$), $cpp_type_name$, mrpc::OffsetOf($class_name$, $field_name$) };\n");
+        }
     }
 }
 

@@ -4,7 +4,6 @@
 #include <initializer_list>
 #include <string_view>
 #include <vector>
-#include <unordered_map>
 
 #include <mrpc/message/message.h>
 #include <mrpc/options.mrpc.h>
@@ -26,6 +25,10 @@ public:
 
     inline std::string_view GetName() const { return name_; }
     inline std::string_view GetFullName() const { return full_name_; }
+
+    bool IsValid(int32_t value) const { return value_checker_(value); }
+    std::string_view FindName(int32_t value) const { return name_finder_(value); }
+    bool ParseName(std::string_view name, int32_t& value) const { return name_parser_(name, value); }
 
 private:
     std::string_view name_;
@@ -107,6 +110,25 @@ private:
 class RepeatedFieldDescriptor : public FieldDescriptor
 {
 public:
+    class Iterator
+    {
+    public:
+        Iterator() = default;
+        virtual ~Iterator() = default;
+
+        virtual bool HasNext() const = 0;
+        virtual void Next() = 0;
+
+        template<typename T>
+        inline const T& Get() const
+        {
+            return *reinterpret_cast<const T*>(GetDataPtr());
+        }
+
+    protected:
+        virtual const void* GetDataPtr() const = 0;
+    };
+
     RepeatedFieldDescriptor(std::string_view name,
             CppType cpp_type,
             size_t offset,
@@ -115,30 +137,114 @@ public:
             CppType cpp_type,
             size_t offset,
             CppType value_cpp_type,
-            const Descriptor* value_descriptor);
+            const EnumDescriptor* enum_descriptor);
+    RepeatedFieldDescriptor(std::string_view name,
+            CppType cpp_type,
+            size_t offset,
+            CppType value_cpp_type,
+            const Descriptor* descriptor);
 
     inline CppType GetValueCppType() const { return value_cpp_type_; }
-    inline const Descriptor* GetValueDescriptor() const { return value_descriptor_; }
+    inline const EnumDescriptor* GetEnumDescriptor() const { return enum_descriptor_; }
+    inline const Descriptor* GetDescriptor() const { return descriptor_; }
+
+    virtual Iterator* NewIterator(const Message& msg) const = 0;
+
+    template<typename T>
+    inline T& Add(Message& msg) const
+    {
+        return *reinterpret_cast<T*>(AddDataPtr(msg));
+    }
+
+protected:
+    virtual void* AddDataPtr(Message& msg) const = 0;
 
 private:
     CppType value_cpp_type_ = CPPTYPE_UNKNOWN;
-    const Descriptor* value_descriptor_ = nullptr;
+    union
+    {
+        const EnumDescriptor* enum_descriptor_ = nullptr;
+        const Descriptor* descriptor_;
+    };
 };
 
-class DescriptorPool
+class MapFieldDescriptor : public FieldDescriptor
 {
 public:
-    const Descriptor* FindDescriptorByFullName(std::string_view full_name) const;
+    class Iterator
+    {
+    public:
+        Iterator() = default;
+        virtual ~Iterator() = default;
 
-    static DescriptorPool* GetInstance();
+        virtual bool HasNext() const = 0;
+        virtual void Next() = 0;
+
+        template<typename T>
+        inline const T& GetKey() const
+        {
+            return *reinterpret_cast<const T*>(GetKeyDataPtr());
+        }
+
+        template<typename T>
+        inline const T& GetValue() const
+        {
+            return *reinterpret_cast<const T*>(GetValueDataPtr());
+        }
+
+    protected:
+        virtual const void* GetKeyDataPtr() const = 0;
+        virtual const void* GetValueDataPtr() const = 0;
+    };
+
+    MapFieldDescriptor(std::string_view name,
+            CppType cpp_type,
+            size_t offset,
+            CppType key_cpp_type,
+            CppType value_cpp_type);
+    MapFieldDescriptor(std::string_view name,
+            CppType cpp_type,
+            size_t offset,
+            CppType key_cpp_type,
+            CppType value_cpp_type,
+            const EnumDescriptor* enum_descriptor);
+    MapFieldDescriptor(std::string_view name,
+            CppType cpp_type,
+            size_t offset,
+            CppType key_cpp_type,
+            CppType value_cpp_type,
+            const Descriptor* descriptor);
+
+    inline CppType GetKeyCppType() const { return key_cpp_type_; }
+    inline CppType GetValueCppType() const { return value_cpp_type_; }
+    inline const EnumDescriptor* GetEnumDescriptor() const { return enum_descriptor_; }
+    inline const Descriptor* GetDescriptor() const { return descriptor_; }
+
+    virtual Iterator* NewIterator(const Message& msg) const = 0;
+
+    template<typename K, typename V>
+    inline V* Find(Message& msg, const K& key, bool create_if_not_exist) const
+    {
+        return reinterpret_cast<V*>(FindDataPtr(msg, &key, create_if_not_exist));
+    }
+
+protected:
+    virtual void* FindDataPtr(Message& msg, const void* key, bool create_if_not_exist) const = 0;
 
 private:
-    std::unordered_map<std::string_view, const Descriptor*> pool_;
-    static DescriptorPool* instance_;
+    CppType key_cpp_type_ = CPPTYPE_UNKNOWN;
+    CppType value_cpp_type_ = CPPTYPE_UNKNOWN;
+    union
+    {
+        const EnumDescriptor* enum_descriptor_ = nullptr;
+        const Descriptor* descriptor_;
+    };
+};
 
-    void AddDescriptorByFullName(std::string_view full_name, const Descriptor* descriptor);
-
-    friend class Descriptor;
+class DescriptorPool final
+{
+public:
+    static const Descriptor* FindDescriptorByFullName(std::string_view full_name);
 };
 
 };

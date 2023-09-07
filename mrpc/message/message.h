@@ -7,6 +7,7 @@
 namespace mrpc
 {
 
+class EnumDescriptor;
 class Descriptor;
 class Message;
 

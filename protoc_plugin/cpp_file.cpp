@@ -119,10 +119,12 @@ void CppFile::OutputToHeaderFile(google::protobuf::compiler::GeneratorContext* c
     printer.Print("\n");
 
     printer.Print("#include <mrpc/message/message.h>\n");
+    /*
     if (gen_cpp_reflection_ && (!enums_.empty() || !classes_.empty()))
     {
         printer.Print("#include <mrpc/message/descriptor.h>\n");
     }
+    */
     printer.Print("\n");
 
     for (auto& include : includes_)
@@ -172,9 +174,9 @@ void CppFile::OutputToSourceFile(google::protobuf::compiler::GeneratorContext* c
             "\n"
             "#include <mrpc/message/message_internal.h>\n");
 
-    if (!classes_.empty() && gen_cpp_reflection_)
+    if (gen_cpp_reflection_ && (!enums_.empty() || !classes_.empty()))
     {
-        printer.Print("#include <mrpc/message/reflection_internal.h>\n");
+        printer.Print("#include <mrpc/message/descriptor_internal.h>\n");
     }
     printer.Print(vars,
             "\n"
