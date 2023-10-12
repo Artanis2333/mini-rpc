@@ -16,7 +16,7 @@ function(add_protobuf_file TARGET FILE_PATH)
         DEPENDS ${FILE_PATH}
         )
     add_custom_target(${TARGET}-gen-files DEPENDS ${PROTOBUF_GEN_HEADER_FILE} ${PROTOBUF_GEN_SOURCE_FILE})
-    add_library(${TARGET} STATIC ${PROTOBUF_GEN_SOURCE_FILE})
+    add_library(${TARGET} OBJECT ${PROTOBUF_GEN_SOURCE_FILE})
     target_include_directories(${TARGET} PRIVATE ${PROTOBUF_INSTALL_PATH}/include)
     target_compile_options(${TARGET} PRIVATE -Wno-all -Wno-extra -Wno-error)
 endfunction()
@@ -39,7 +39,7 @@ function(add_mrpc_file TARGET FILE_PATH)
         DEPENDS protoc-gen-mrpc_cpp ${FILE_PATH}
         )
     add_custom_target(${TARGET}-gen-files DEPENDS ${MRPC_GEN_HEADER_FILE} ${MRPC_GEN_SOURCE_FILE})
-    add_library(${TARGET} STATIC ${MRPC_GEN_SOURCE_FILE})
+    add_library(${TARGET} OBJECT ${MRPC_GEN_SOURCE_FILE})
 endfunction()
 
 function(install_header_files FILE_DIR ROOT_DIR)
