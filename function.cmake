@@ -17,7 +17,7 @@ function(add_protobuf_file TARGET FILE_PATH)
         )
     add_custom_target(${TARGET}-gen-files DEPENDS ${PROTOBUF_GEN_HEADER_FILE} ${PROTOBUF_GEN_SOURCE_FILE})
     add_library(${TARGET} OBJECT ${PROTOBUF_GEN_SOURCE_FILE})
-    target_include_directories(${TARGET} PRIVATE ${PROTOBUF_INSTALL_PATH}/include)
+    target_include_directories(${TARGET} PRIVATE ${PROTOBUF_INSTALL_INCLUDEDIR})
     target_compile_options(${TARGET} PRIVATE -Wno-all -Wno-extra -Wno-error)
 endfunction()
 
