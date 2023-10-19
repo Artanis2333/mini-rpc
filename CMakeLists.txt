@@ -1,13 +1,15 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.4)
 
 project(mini-rpc VERSION 0.2)
 
+include(GNUInstallDirs)
+include(function.cmake)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_DEBUG_POSTFIX _d)
 
 add_compile_options(-Wall -Wextra -Werror)
-
-include(function.cmake)
 
 # MiniRPC 
 set(MINI_PPC_INSTALL_PATH /usr/local/mini-rpc)
@@ -25,15 +27,16 @@ set(PROTOC ${PROTOBUF_INSTALL_PATH}/bin/protoc)
 set(PROTOBUF_INSTALL_INCLUDEDIR ${PROTOBUF_INSTALL_PATH}/include)
 set(PROTOBUF_INSTALL_LIBDIR ${PROTOBUF_INSTALL_PATH}/lib)
 
+option(BUILD_TEST "Build test cases" OFF)
+
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_BINARY_DIR})
 
 add_subdirectory(protoc_plugin)
 add_subdirectory(mrpc)
 
-# Build test
-option(BUILD_TEST "Build test cases" OFF)
-
-IF(BUILD_TEST)
+if(BUILD_TEST)
 add_subdirectory(test)
-ENDIF()
+endif()
+
+install(FILES ${CMAKE_SOURCE_DIR}/LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR})

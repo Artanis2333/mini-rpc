@@ -35,6 +35,7 @@ if [ ! -z $INSTALL_PATH ]; then
         mkdir -p $INSTALL_PATH
     fi
     CMAKE_ARG="-DCMAKE_INSTALL_PREFIX=$INSTALL_PATH"
+    CMAKE_ARG+=" -DCMAKE_INSTALL_LIBDIR=lib"
 fi
 
 if [ $RELEASE_MODE == 0 ]; then

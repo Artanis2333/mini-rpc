@@ -41,14 +41,3 @@ function(add_mrpc_file TARGET FILE_PATH)
     add_custom_target(${TARGET}-gen-files DEPENDS ${MRPC_GEN_HEADER_FILE} ${MRPC_GEN_SOURCE_FILE})
     add_library(${TARGET} OBJECT ${MRPC_GEN_SOURCE_FILE})
 endfunction()
-
-function(install_header_files FILE_DIR ROOT_DIR)
-    file(GLOB_RECURSE HEADER_FILES ${FILE_DIR}/*.h)
-
-    foreach(HEADER_FILE ${HEADER_FILES})
-        file(RELATIVE_PATH RELATIVE_HEADER_FILE ${ROOT_DIR} ${HEADER_FILE})
-        get_filename_component(HEADER_INSTALL_DIR ${RELATIVE_HEADER_FILE} DIRECTORY)
-        install(FILES ${HEADER_FILE} DESTINATION include/${HEADER_INSTALL_DIR})
-    endforeach()
-endfunction()
-

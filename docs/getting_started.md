@@ -88,6 +88,7 @@ mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DCMAKE_INSTALL_PREFIX=${MINI_PPC_INSTALL_PATH} \
+    -DCMAKE_INSTALL_LIBDIR=lib \
     ..
 make -j 4
 make install

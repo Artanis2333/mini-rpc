@@ -6,4 +6,4 @@ target_include_directories(protoc-gen-mrpc_cpp PRIVATE ${PROTOBUF_INSTALL_INCLUD
 target_link_directories(protoc-gen-mrpc_cpp PRIVATE ${PROTOBUF_INSTALL_LIBDIR})
 target_link_libraries(protoc-gen-mrpc_cpp protobuf-options protoc protobuf)
 
-install(TARGETS protoc-gen-mrpc_cpp DESTINATION bin)
+install(TARGETS protoc-gen-mrpc_cpp DESTINATION ${CMAKE_INSTALL_BINDIR})
