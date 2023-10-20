@@ -15,12 +15,6 @@ export MINI_PPC_INSTALL_PATH=${HOME}/mini-rpc
 ```
 
 ### protobuf
-指定protobuf的安装路径，这里以 **${HOME}/protobuf** 为例。
-MiniRPC编译完后便不再依赖protobuf的头文件和静态库，仅依赖其中的一个二进制文件protoc，所以这里并没有把protobuf与MiniRPC安装到同一路径下。
-```shell
-export PROTOBUF_INSTALL_PATH=${HOME}/protobuf
-```
-
 编译安装protobuf
 ```shell
 wget -O protobuf-21.5.tar.gz https://github.com/protocolbuffers/protobuf/archive/refs/tags/v21.5.tar.gz
@@ -31,17 +25,32 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=Release \
     -Dprotobuf_BUILD_TESTS=OFF \
     -Dprotobuf_BUILD_SHARED_LIBS=OFF \
-    -DCMAKE_INSTALL_PREFIX=${PROTOBUF_INSTALL_PATH} \
+    -DCMAKE_INSTALL_PREFIX=${MINI_PPC_INSTALL_PATH}/3party/protobuf \
     -DCMAKE_INSTALL_LIBDIR=lib \
     ..
 make -j 4
 make install
+cd ..
+cp LICENSE ${MINI_PPC_INSTALL_PATH}/3party/protobuf
 ```
 
-拷贝protoc
+### libuv
+编译安装libuv
 ```shell
-mkdir -p ${MINI_PPC_INSTALL_PATH}/bin
-cp ${PROTOBUF_INSTALL_PATH}/bin/protoc* ${MINI_PPC_INSTALL_PATH}/bin
+wget -O libuv-1.46.0.tar.gz https://github.com/libuv/libuv/archive/refs/tags/v1.46.0.tar.gz
+tar zxf libuv-1.46.0.tar.gz
+cd libuv-1.46.0
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release \
+    -DLIBUV_BUILD_SHARED=OFF \
+    -DCMAKE_INSTALL_PREFIX=${MINI_PPC_INSTALL_PATH}/3party/libuv \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    ..
+make -j 4
+make install
+cd ..
+cp LICENSE* ${MINI_PPC_INSTALL_PATH}/3party/libuv
 ```
 
 ### jsoncpp
@@ -60,6 +69,8 @@ cmake -DCMAKE_BUILD_TYPE=Release \
     ..
 make -j 4
 make install
+cd ..
+cp LICENSE ${MINI_PPC_INSTALL_PATH}/3party/jsoncpp
 ```
 
 ### googletest
@@ -70,20 +81,33 @@ tar zxf googletest-1.14.0.tar.gz
 cd googletest-1.14.0
 mkdir build
 cd build
-
-
 cmake -DCMAKE_INSTALL_PREFIX=${MINI_PPC_INSTALL_PATH}/3party/googletest \
     -DCMAKE_INSTALL_LIBDIR=lib \
     ..
 make -j 4
 make install
+cd ..
+cp LICENSE ${MINI_PPC_INSTALL_PATH}/3party/googletest
 ```
 
 ### MiniRPC
-编译安装
+编译安装Debug和RelWithDebInfo两种版本
 ```shell
 git clone https://github.com/Artanis2333/mini-rpc.git
 cd mini-rpc
+
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Debug \
+-DCMAKE_INSTALL_PREFIX=${MINI_PPC_INSTALL_PATH} \
+-DCMAKE_INSTALL_LIBDIR=lib \
+..
+make -j 4
+make install
+
+cd ..
+rm -r build
+
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \

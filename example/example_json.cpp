@@ -453,14 +453,6 @@ void JsonToMessage(const Json::Value& json, mrpc::Message& msg, bool skip_type_m
     }
 }
 
-/*
- * Dependency: JsonCpp
- * https://github.com/open-source-parsers/jsoncpp.git
- *
- * protoc --plugin=../build/protoc_plugin/protoc-gen-mrpc_cpp --mrpc_cpp_out=. --proto_path=.. --proto_path=. example.proto
- * g++ -std=c++17 -o example_json example_json.cpp example.mrpc.cpp -lmrpc -ljsoncpp
- *
- */
 int main(int argc, char* argv[])
 {
     example::Example msg;

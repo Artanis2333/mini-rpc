@@ -11,18 +11,14 @@ set(CMAKE_DEBUG_POSTFIX _d)
 
 add_compile_options(-Wall -Wextra -Werror)
 
-# MiniRPC 
+# MiniRPC
 set(MINI_PPC_INSTALL_PATH /usr/local/mini-rpc)
 if(DEFINED ENV{MINI_PPC_INSTALL_PATH})
     set(MINI_PPC_INSTALL_PATH $ENV{MINI_PPC_INSTALL_PATH})
 endif()
 
 # Protobuf
-set(PROTOBUF_INSTALL_PATH /usr/local/protobuf)
-if(DEFINED ENV{PROTOBUF_INSTALL_PATH})
-    set(PROTOBUF_INSTALL_PATH $ENV{PROTOBUF_INSTALL_PATH})
-endif()
-message(STATUS "PROTOBUF_INSTALL_PATH: ${PROTOBUF_INSTALL_PATH}")
+set(PROTOBUF_INSTALL_PATH ${MINI_PPC_INSTALL_PATH}/3party/protobuf)
 set(PROTOC ${PROTOBUF_INSTALL_PATH}/bin/protoc)
 set(PROTOBUF_INSTALL_INCLUDEDIR ${PROTOBUF_INSTALL_PATH}/include)
 set(PROTOBUF_INSTALL_LIBDIR ${PROTOBUF_INSTALL_PATH}/lib)
@@ -36,7 +32,8 @@ add_subdirectory(protoc_plugin)
 add_subdirectory(mrpc)
 
 if(BUILD_TEST)
-add_subdirectory(test)
+    add_subdirectory(test)
 endif()
 
-install(FILES ${CMAKE_SOURCE_DIR}/LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR})
+install(DIRECTORY cmake DESTINATION . FILES_MATCHING PATTERN "*.cmake")
+install(FILES LICENSE DESTINATION .)
