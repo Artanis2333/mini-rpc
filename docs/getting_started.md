@@ -2,6 +2,7 @@
 MiniRPC鼓励将第三方依赖静态编译并集成到同一路径下，这样便于框架的打包和分发，且运行MiniRPC服务的机器不必再安装依赖。
 MiniRPC的第三方依赖有：
 * [protobuf](https://github.com/protocolbuffers/protobuf)
+* [libuv](https://github.com/libuv/libuv)
 * [jsoncpp](https://github.com/open-source-parsers/jsoncpp)
 * [googletest](https://github.com/google/googletest)
 
