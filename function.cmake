@@ -35,8 +35,8 @@ function(add_mrpc_file TARGET FILE_PATH)
 
     add_custom_command(
         OUTPUT ${MRPC_GEN_HEADER_FILE} ${MRPC_GEN_SOURCE_FILE}
-        COMMAND ${PROTOC} --plugin=${CMAKE_BINARY_DIR}/protoc_plugin/protoc-gen-mrpc_cpp --mrpc_cpp_out=${CMAKE_CURRENT_BINARY_DIR} --proto_path=${CMAKE_SOURCE_DIR} --proto_path=${CMAKE_CURRENT_SOURCE_DIR} ${FILE_PATH}
-        DEPENDS protoc-gen-mrpc_cpp ${FILE_PATH}
+        COMMAND ${PROTOC} --plugin=${CMAKE_BINARY_DIR}/protoc_plugin/protoc-gen-mrpc-cpp --mrpc-cpp_out=${CMAKE_CURRENT_BINARY_DIR} --proto_path=${CMAKE_SOURCE_DIR} --proto_path=${CMAKE_CURRENT_SOURCE_DIR} ${FILE_PATH}
+        DEPENDS protoc-gen-mrpc-cpp ${FILE_PATH}
         )
     add_custom_target(${TARGET}-gen-files DEPENDS ${MRPC_GEN_HEADER_FILE} ${MRPC_GEN_SOURCE_FILE})
     add_library(${TARGET} OBJECT ${MRPC_GEN_SOURCE_FILE})

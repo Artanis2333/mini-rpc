@@ -1112,4 +1112,4 @@ inline bool ParseUnorderedMapCheckType(uint32_t type, std::unordered_map<typenam
 
 bool ParseSkipUnknown(uint32_t type, const uint8_t*& begin, const uint8_t* const end);
 
-};
+}

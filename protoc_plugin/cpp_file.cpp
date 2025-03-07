@@ -153,7 +153,7 @@ void CppFile::OutputToHeaderFile(google::protobuf::compiler::GeneratorContext* c
     }
 
     // namespace
-    printer.Print("};\n"
+    printer.Print("}\n"
             "\n");
 
     // include macro

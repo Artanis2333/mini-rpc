@@ -515,4 +515,4 @@ void* UnorderedMapFieldDescriptorImpl<K, V>::FindDataPtr(Message& msg, const voi
     return nullptr;
 }
 
-};
+}

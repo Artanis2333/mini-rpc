@@ -89,4 +89,4 @@ void ReflectableMessage<T>::CopyFrom(const Message& msg)
     *dst = *src;
 }
 
-};
+}

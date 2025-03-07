@@ -18,11 +18,9 @@ private:
     static DescriptorPoolImpl* instance_;
 };
 
-};
+DescriptorPoolImpl* DescriptorPoolImpl::instance_ = nullptr;
 
-mrpc::DescriptorPoolImpl* mrpc::DescriptorPoolImpl::instance_ = nullptr;
-
-mrpc::DescriptorPoolImpl* mrpc::DescriptorPoolImpl::GetInstance()
+DescriptorPoolImpl* DescriptorPoolImpl::GetInstance()
 {
     if (instance_ == nullptr)
     {
@@ -31,20 +29,20 @@ mrpc::DescriptorPoolImpl* mrpc::DescriptorPoolImpl::GetInstance()
     return instance_;
 }
 
-const mrpc::Descriptor* mrpc::DescriptorPoolImpl::FindDescriptorByFullName(std::string_view full_name) const
+const Descriptor* DescriptorPoolImpl::FindDescriptorByFullName(std::string_view full_name) const
 {
     auto it = pool_.find(full_name);
     if (it == pool_.end()) return nullptr;
     return it->second;
 }
 
-void mrpc::DescriptorPoolImpl::AddDescriptorByFullName(std::string_view full_name, const mrpc::Descriptor* descriptor)
+void DescriptorPoolImpl::AddDescriptorByFullName(std::string_view full_name, const Descriptor* descriptor)
 {
     assert(pool_.find(full_name) == pool_.end());
     pool_.emplace(full_name, descriptor);
 }
 
-mrpc::EnumDescriptor::EnumDescriptor(std::string_view name,
+EnumDescriptor::EnumDescriptor(std::string_view name,
         std::string_view full_name,
         bool(*value_checker)(int32_t),
         std::string_view (*name_finder)(int32_t),
@@ -57,7 +55,7 @@ mrpc::EnumDescriptor::EnumDescriptor(std::string_view name,
 {
 }
 
-mrpc::Descriptor::Descriptor(std::string_view name,
+Descriptor::Descriptor(std::string_view name,
         std::string_view full_name,
         std::initializer_list<const FieldDescriptor*> fields) :
     name_(name),
@@ -67,7 +65,7 @@ mrpc::Descriptor::Descriptor(std::string_view name,
     DescriptorPoolImpl::GetInstance()->AddDescriptorByFullName(full_name_, this);
 }
 
-const mrpc::FieldDescriptor* mrpc::Descriptor::FindFieldByName(std::string_view name) const
+const FieldDescriptor* Descriptor::FindFieldByName(std::string_view name) const
 {
     for (auto& field : fields_)
     {
@@ -79,7 +77,7 @@ const mrpc::FieldDescriptor* mrpc::Descriptor::FindFieldByName(std::string_view 
     return nullptr;
 }
 
-mrpc::FieldDescriptor::FieldDescriptor(std::string_view name,
+FieldDescriptor::FieldDescriptor(std::string_view name,
         CppType cpp_type,
         size_t offset) :
     name_(name),
@@ -88,7 +86,7 @@ mrpc::FieldDescriptor::FieldDescriptor(std::string_view name,
 {
 }
 
-mrpc::EnumFieldDescriptor::EnumFieldDescriptor(std::string_view name,
+EnumFieldDescriptor::EnumFieldDescriptor(std::string_view name,
         CppType cpp_type,
         size_t offset,
         const EnumDescriptor* enum_descriptor) :
@@ -97,7 +95,7 @@ mrpc::EnumFieldDescriptor::EnumFieldDescriptor(std::string_view name,
 {
 }
 
-mrpc::MessageFieldDescriptor::MessageFieldDescriptor(std::string_view name,
+MessageFieldDescriptor::MessageFieldDescriptor(std::string_view name,
         CppType cpp_type,
         size_t offset,
         const Descriptor* descriptor) :
@@ -106,7 +104,7 @@ mrpc::MessageFieldDescriptor::MessageFieldDescriptor(std::string_view name,
 {
 }
 
-mrpc::RepeatedFieldDescriptor::RepeatedFieldDescriptor(std::string_view name,
+RepeatedFieldDescriptor::RepeatedFieldDescriptor(std::string_view name,
         CppType cpp_type,
         size_t offset,
         CppType value_cpp_type) :
@@ -115,7 +113,7 @@ mrpc::RepeatedFieldDescriptor::RepeatedFieldDescriptor(std::string_view name,
 {
 }
 
-mrpc::RepeatedFieldDescriptor::RepeatedFieldDescriptor(std::string_view name,
+RepeatedFieldDescriptor::RepeatedFieldDescriptor(std::string_view name,
         CppType cpp_type,
         size_t offset,
         CppType value_cpp_type,
@@ -125,7 +123,7 @@ mrpc::RepeatedFieldDescriptor::RepeatedFieldDescriptor(std::string_view name,
     enum_descriptor_ = enum_descriptor;
 }
 
-mrpc::RepeatedFieldDescriptor::RepeatedFieldDescriptor(std::string_view name,
+RepeatedFieldDescriptor::RepeatedFieldDescriptor(std::string_view name,
         CppType cpp_type,
         size_t offset,
         CppType value_cpp_type,
@@ -135,7 +133,7 @@ mrpc::RepeatedFieldDescriptor::RepeatedFieldDescriptor(std::string_view name,
     descriptor_ = descriptor;
 }
 
-mrpc::MapFieldDescriptor::MapFieldDescriptor(std::string_view name,
+MapFieldDescriptor::MapFieldDescriptor(std::string_view name,
         CppType cpp_type,
         size_t offset,
         CppType key_cpp_type,
@@ -146,7 +144,7 @@ mrpc::MapFieldDescriptor::MapFieldDescriptor(std::string_view name,
 {
 }
 
-mrpc::MapFieldDescriptor::MapFieldDescriptor(std::string_view name,
+MapFieldDescriptor::MapFieldDescriptor(std::string_view name,
         CppType cpp_type,
         size_t offset,
         CppType key_cpp_type,
@@ -159,7 +157,7 @@ mrpc::MapFieldDescriptor::MapFieldDescriptor(std::string_view name,
     enum_descriptor_ = enum_descriptor;
 }
 
-mrpc::MapFieldDescriptor::MapFieldDescriptor(std::string_view name,
+MapFieldDescriptor::MapFieldDescriptor(std::string_view name,
         CppType cpp_type,
         size_t offset,
         CppType key_cpp_type,
@@ -172,7 +170,9 @@ mrpc::MapFieldDescriptor::MapFieldDescriptor(std::string_view name,
     descriptor_ = descriptor;
 }
 
-const mrpc::Descriptor* mrpc::DescriptorPool::FindDescriptorByFullName(std::string_view full_name)
+const Descriptor* DescriptorPool::FindDescriptorByFullName(std::string_view full_name)
 {
     return DescriptorPoolImpl::GetInstance()->FindDescriptorByFullName(full_name);
+}
+
 }

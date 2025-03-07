@@ -178,4 +178,4 @@ inline Message& MapSetWithMessageValue(Message& msg, const FieldDescriptor& desc
 using RepeatedIteratorPtr = std::unique_ptr<RepeatedFieldDescriptor::Iterator>;
 using MapIteratorPtr = std::unique_ptr<MapFieldDescriptor::Iterator>;
 
-};
+}

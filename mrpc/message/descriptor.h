@@ -247,4 +247,4 @@ public:
     static const Descriptor* FindDescriptorByFullName(std::string_view full_name);
 };
 
-};
+}

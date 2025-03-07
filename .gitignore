@@ -1,6 +1,10 @@
 # Temp files
 build
 *.swp
+tags
+GPATH
+GRTAGS
+GTAGS
 
 # Generated files
 *.pb.h

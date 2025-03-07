@@ -2,3 +2,4 @@
 
 #define MRPC_VERSION_MAJOR @mini-rpc_VERSION_MAJOR@
 #define MRPC_VERSION_MINOR @mini-rpc_VERSION_MINOR@
+#define MRPC_VERSION_PATCH @mini-rpc_VERSION_PATCH@

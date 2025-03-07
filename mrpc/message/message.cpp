@@ -1,20 +1,23 @@
 #include <mrpc/message/message.h>
 
-mrpc::Message* mrpc::Message::New() const
+namespace mrpc
+{
+
+Message* Message::New() const
 {
     return nullptr;
 }
 
-void mrpc::Message::CopyFrom(const mrpc::Message& /*msg*/)
+void Message::CopyFrom(const Message& /*msg*/)
 {
 }
 
-const mrpc::Descriptor* mrpc::Message::GetDescriptor() const
+const Descriptor* Message::GetDescriptor() const
 {
     return nullptr;
 }
 
-void mrpc::Message::SerializeToString(std::string& s, bool skip_default /*= true*/)
+void Message::SerializeToString(std::string& s, bool skip_default /*= true*/)
 {
     size_t size = ByteSize(skip_default);
     s.clear();
@@ -33,7 +36,9 @@ void mrpc::Message::SerializeToString(std::string& s, bool skip_default /*= true
     }
 }
 
-bool mrpc::Message::ParseFromString(std::string_view s)
+bool Message::ParseFromString(std::string_view s)
 {
     return ParseFromBytes(reinterpret_cast<const uint8_t*>(s.data()), reinterpret_cast<const uint8_t*>(s.data() + s.size()));
+}
+
 }

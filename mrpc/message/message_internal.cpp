@@ -1,6 +1,9 @@
 #include <mrpc/message/message_internal.h>
 
-bool mrpc::ParseSkipUnknown(uint32_t type, const uint8_t*& begin, const uint8_t* const end)
+namespace mrpc
+{
+
+bool ParseSkipUnknown(uint32_t type, const uint8_t*& begin, const uint8_t* const end)
 {
     switch (type)
     {
@@ -37,4 +40,6 @@ bool mrpc::ParseSkipUnknown(uint32_t type, const uint8_t*& begin, const uint8_t*
         }
     }
     return true;
+}
+
 }

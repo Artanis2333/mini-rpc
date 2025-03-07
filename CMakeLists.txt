@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.4)
 
-project(mini-rpc VERSION 0.2)
+project(mini-rpc VERSION 0.2.0)
 
 include(GNUInstallDirs)
 include(function.cmake)
