@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdint.h>
-#include <string.h>
+#include <cstdint>
+#include <cstring>
 #include <string>
 #include <vector>
 #include <list>
@@ -126,14 +126,14 @@ enum FieldType : int32_t
 template<FieldType field_type>
 struct FieldWireTypeTraits
 {
-    static const WireType kWireType = WIRETYPE_VARINT;
+    static constexpr WireType kWireType = WIRETYPE_VARINT;
 };
 
 #define FIELD_WIRE_TYPE_TRAITS_HELPER(field_type, wire_type)    \
 template<>                                                      \
 struct FieldWireTypeTraits<field_type>                          \
 {                                                               \
-    static const WireType kWireType = wire_type;                \
+    static constexpr WireType kWireType = wire_type;            \
 };
 
 FIELD_WIRE_TYPE_TRAITS_HELPER(TYPE_FIXED_UINT32, WIRETYPE_FIXED32)

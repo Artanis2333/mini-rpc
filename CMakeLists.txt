@@ -5,7 +5,7 @@ project(mini-rpc VERSION 0.2.0)
 include(GNUInstallDirs)
 include(function.cmake)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_DEBUG_POSTFIX _d)
 

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <assert.h>
+#include <cassert>
 #include <memory>
 #include <mrpc/message/descriptor.h>
 
-namespace mrpc::reflection
+namespace mrpc
 {
 
 template<typename T>
@@ -31,33 +31,37 @@ REFLECTION_CPP_TYPE_TRAITS_HELPER(CPPTYPE_BOOL, bool)
 REFLECTION_CPP_TYPE_TRAITS_HELPER(CPPTYPE_STRING, std::string)
 //REFLECTION_CPP_TYPE_TRAITS_HELPER(CPPTYPE_MESSAGE, Message)
 
+class Reflection
+{
+public:
+
 template<typename T>
-inline const T& Get(const Message& msg, const FieldDescriptor& desc)
+static inline const T& Get(const Message& msg, const FieldDescriptor& desc)
 {
     assert(desc.GetCppType() == ReflectionCppTypeTraits<T>::cpp_type);
     return *reinterpret_cast<const T*>(reinterpret_cast<const char*>(&msg) + desc.GetOffset());
 }
 
 template<typename T>
-inline void Set(Message& msg, const FieldDescriptor& desc, const T& t)
+static inline void Set(Message& msg, const FieldDescriptor& desc, const T& t)
 {
     assert(desc.GetCppType() == ReflectionCppTypeTraits<T>::cpp_type);
     *reinterpret_cast<T*>(reinterpret_cast<char*>(&msg) + desc.GetOffset()) = t;
 }
 
-int32_t GetEnum(const Message& msg, const FieldDescriptor& desc);
-bool SetEnum(Message& msg, const FieldDescriptor& desc, int32_t value);
+static int32_t GetEnum(const Message& msg, const FieldDescriptor& desc);
+static bool SetEnum(Message& msg, const FieldDescriptor& desc, int32_t value);
 
-std::string_view GetEnumName(const Message& msg, const FieldDescriptor& desc);
-bool SetEnumName(Message& msg, const FieldDescriptor& desc, std::string_view name);
+static std::string_view GetEnumName(const Message& msg, const FieldDescriptor& desc);
+static bool SetEnumName(Message& msg, const FieldDescriptor& desc, std::string_view name);
 
-const Message& GetMessage(const Message& msg, const FieldDescriptor& desc);
-Message& GetMessage(Message& msg, const FieldDescriptor& desc);
+static const Message& GetMessage(const Message& msg, const FieldDescriptor& desc);
+static Message& GetMessage(Message& msg, const FieldDescriptor& desc);
 
-RepeatedFieldDescriptor::Iterator* RepeatedNewIterator(const Message& msg, const FieldDescriptor& desc);
+static RepeatedFieldDescriptor::Iterator* RepeatedNewIterator(const Message& msg, const FieldDescriptor& desc);
 
 template<typename T>
-inline const T& RepeatedGet(const FieldDescriptor& desc, RepeatedFieldDescriptor::Iterator& it)
+static inline const T& RepeatedGet(const FieldDescriptor& desc, RepeatedFieldDescriptor::Iterator& it)
 {
     assert(desc.GetCppType() == CPPTYPE_VECTOR || desc.GetCppType() == CPPTYPE_LIST);
     const RepeatedFieldDescriptor* field_desc = dynamic_cast<const RepeatedFieldDescriptor*>(&desc);
@@ -68,7 +72,7 @@ inline const T& RepeatedGet(const FieldDescriptor& desc, RepeatedFieldDescriptor
 }
 
 template<typename T>
-inline void RepeatedAdd(Message& msg, const FieldDescriptor& desc, const T& t)
+static inline void RepeatedAdd(Message& msg, const FieldDescriptor& desc, const T& t)
 {
     assert(desc.GetCppType() == CPPTYPE_VECTOR || desc.GetCppType() == CPPTYPE_LIST);
     const RepeatedFieldDescriptor* field_desc = dynamic_cast<const RepeatedFieldDescriptor*>(&desc);
@@ -77,19 +81,19 @@ inline void RepeatedAdd(Message& msg, const FieldDescriptor& desc, const T& t)
     field_desc->Add<T>(msg) = t;
 }
 
-int32_t RepeatedGetEnum(const FieldDescriptor& desc, RepeatedFieldDescriptor::Iterator& it);
-bool RepeatedAddEnum(Message& msg, const FieldDescriptor& desc, int32_t value);
+static int32_t RepeatedGetEnum(const FieldDescriptor& desc, RepeatedFieldDescriptor::Iterator& it);
+static bool RepeatedAddEnum(Message& msg, const FieldDescriptor& desc, int32_t value);
 
-std::string_view RepeatedGetEnumName(const FieldDescriptor& desc, RepeatedFieldDescriptor::Iterator& it);
-bool RepeatedAddEnumName(Message& msg, const FieldDescriptor& desc, std::string_view name);
+static std::string_view RepeatedGetEnumName(const FieldDescriptor& desc, RepeatedFieldDescriptor::Iterator& it);
+static bool RepeatedAddEnumName(Message& msg, const FieldDescriptor& desc, std::string_view name);
 
-const Message& RepeatedGetMessage(const FieldDescriptor& desc, RepeatedFieldDescriptor::Iterator& it);
-Message& RepeatedAddMessage(Message& msg, const FieldDescriptor& desc);
+static const Message& RepeatedGetMessage(const FieldDescriptor& desc, RepeatedFieldDescriptor::Iterator& it);
+static Message& RepeatedAddMessage(Message& msg, const FieldDescriptor& desc);
 
-MapFieldDescriptor::Iterator* MapNewIterator(const Message& msg, const FieldDescriptor& desc);
+static MapFieldDescriptor::Iterator* MapNewIterator(const Message& msg, const FieldDescriptor& desc);
 
 template<typename T>
-inline const T& MapGetKey(const FieldDescriptor& desc, MapFieldDescriptor::Iterator& it)
+static inline const T& MapGetKey(const FieldDescriptor& desc, MapFieldDescriptor::Iterator& it)
 {
     assert(desc.GetCppType() == CPPTYPE_MAP || desc.GetCppType() == CPPTYPE_UNORDERED_MAP);
     const MapFieldDescriptor* field_desc = dynamic_cast<const MapFieldDescriptor*>(&desc);
@@ -100,7 +104,7 @@ inline const T& MapGetKey(const FieldDescriptor& desc, MapFieldDescriptor::Itera
 }
 
 template<typename T>
-inline const T& MapGetValue(const FieldDescriptor& desc, MapFieldDescriptor::Iterator& it)
+static inline const T& MapGetValue(const FieldDescriptor& desc, MapFieldDescriptor::Iterator& it)
 {
     assert(desc.GetCppType() == CPPTYPE_MAP || desc.GetCppType() == CPPTYPE_UNORDERED_MAP);
     const MapFieldDescriptor* field_desc = dynamic_cast<const MapFieldDescriptor*>(&desc);
@@ -110,12 +114,12 @@ inline const T& MapGetValue(const FieldDescriptor& desc, MapFieldDescriptor::Ite
     return it.GetValue<T>();
 }
 
-int32_t MapGetEnumValue(const FieldDescriptor& desc, MapFieldDescriptor::Iterator& it);
-std::string_view MapGetEnumValueName(const FieldDescriptor& desc, MapFieldDescriptor::Iterator& it);
-const Message& MapGetMessageValue(const FieldDescriptor& desc, MapFieldDescriptor::Iterator& it);
+static int32_t MapGetEnumValue(const FieldDescriptor& desc, MapFieldDescriptor::Iterator& it);
+static std::string_view MapGetEnumValueName(const FieldDescriptor& desc, MapFieldDescriptor::Iterator& it);
+static const Message& MapGetMessageValue(const FieldDescriptor& desc, MapFieldDescriptor::Iterator& it);
 
 template<typename K, typename V>
-inline void MapSet(Message& msg, const FieldDescriptor& desc, const K& key, const V& value)
+static inline void MapSet(Message& msg, const FieldDescriptor& desc, const K& key, const V& value)
 {
     assert(desc.GetCppType() == CPPTYPE_MAP || desc.GetCppType() == CPPTYPE_UNORDERED_MAP);
     const MapFieldDescriptor* field_desc = dynamic_cast<const MapFieldDescriptor*>(&desc);
@@ -126,7 +130,7 @@ inline void MapSet(Message& msg, const FieldDescriptor& desc, const K& key, cons
 }
 
 template<typename K>
-inline bool MapSetWithEnumValue(Message& msg, const FieldDescriptor& desc, const K& key, int32_t value)
+static inline bool MapSetWithEnumValue(Message& msg, const FieldDescriptor& desc, const K& key, int32_t value)
 {
     assert(desc.GetCppType() == CPPTYPE_MAP || desc.GetCppType() == CPPTYPE_UNORDERED_MAP);
     const MapFieldDescriptor* field_desc = dynamic_cast<const MapFieldDescriptor*>(&desc);
@@ -145,7 +149,7 @@ inline bool MapSetWithEnumValue(Message& msg, const FieldDescriptor& desc, const
 }
 
 template<typename K>
-inline bool MapSetWithEnumValueName(Message& msg, const FieldDescriptor& desc, const K& key, std::string_view name)
+static inline bool MapSetWithEnumValueName(Message& msg, const FieldDescriptor& desc, const K& key, std::string_view name)
 {
     assert(desc.GetCppType() == CPPTYPE_MAP || desc.GetCppType() == CPPTYPE_UNORDERED_MAP);
     const MapFieldDescriptor* field_desc = dynamic_cast<const MapFieldDescriptor*>(&desc);
@@ -165,7 +169,7 @@ inline bool MapSetWithEnumValueName(Message& msg, const FieldDescriptor& desc, c
 }
 
 template<typename K>
-inline Message& MapSetWithMessageValue(Message& msg, const FieldDescriptor& desc, const K& key)
+static inline Message& MapSetWithMessageValue(Message& msg, const FieldDescriptor& desc, const K& key)
 {
     assert(desc.GetCppType() == CPPTYPE_MAP || desc.GetCppType() == CPPTYPE_UNORDERED_MAP);
     const MapFieldDescriptor* field_desc = dynamic_cast<const MapFieldDescriptor*>(&desc);
@@ -177,5 +181,6 @@ inline Message& MapSetWithMessageValue(Message& msg, const FieldDescriptor& desc
 
 using RepeatedIteratorPtr = std::unique_ptr<RepeatedFieldDescriptor::Iterator>;
 using MapIteratorPtr = std::unique_ptr<MapFieldDescriptor::Iterator>;
+};
 
 }
