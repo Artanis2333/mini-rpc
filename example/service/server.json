@@ -1,0 +1,30 @@
+{
+    "common": {
+        "app_name": "ExampleServer",
+        "loop_interval": 1000
+    },
+    "server": {
+        "service": [
+            {
+                "name": "EchoService",
+                "network": {
+                    "protocol": "tcp",
+                    "host": "127.0.0.1",
+                    "port": 7000
+                },
+                "protocol": "mrpc",
+                "thread_num": 2
+            },
+            {
+                "name": "MathService",
+                "network": {
+                    "protocol": "tcp",
+                    "host": "127.0.0.1",
+                    "port": 7001
+                },
+                "protocol": "mrpc",
+                "thread_num": 2
+            }
+        ]
+    }
+}

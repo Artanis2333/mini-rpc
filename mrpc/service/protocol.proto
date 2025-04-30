@@ -1,0 +1,28 @@
+syntax = "proto3";
+package mrpc;
+
+message MrpcRequestParam
+{
+    bool        has_thread_hash_code    = 1;
+    fixed32     thread_hash_code        = 2;
+    bool        need_response           = 3;
+}
+
+message MrpcRequestPayload
+{
+    MrpcRequestParam param              = 1;
+    string      request_payload         = 2;
+};
+
+message MrpcMethodRequest
+{
+    fixed32     method_code             = 1;
+    string      req_data                = 2;
+};
+
+message MrpcMethodResponse
+{
+    sint32      ret                     = 1;
+    string      rsp_data                = 2;
+};
+

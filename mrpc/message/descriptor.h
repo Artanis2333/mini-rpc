@@ -5,8 +5,8 @@
 #include <string_view>
 #include <vector>
 
+#include <mrpc/message/common.mrpc.h>
 #include <mrpc/message/message.h>
-#include <mrpc/options.mrpc.h>
 
 namespace mrpc
 {

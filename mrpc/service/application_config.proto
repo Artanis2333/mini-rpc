@@ -1,0 +1,54 @@
+syntax = "proto2";
+package mrpc;
+
+enum NetworkProtocol
+{
+    tcp = 1;
+}
+
+message NetworkConfig
+{
+    optional NetworkProtocol protocol       = 1 [default = tcp];
+    optional string     host                = 2;
+    optional uint32     port                = 3;
+    optional uint32     timeout             = 4 [default = 5000];
+    optional uint32     tcp_backlog         = 5 [default = 128];
+}
+
+message CommonConfig
+{
+    optional string     app_name            = 1;
+    optional uint32     loop_interval       = 2 [default = 1000];
+}
+
+message ServiceStubConfig
+{
+    optional string     name                = 1;
+    optional NetworkConfig network          = 2;
+    optional string     protocol            = 3 [default = "mrpc"];
+}
+
+message ServiceProxyConfig
+{
+    repeated ServiceStubConfig stub         = 1;
+}
+
+message ServiceConfig
+{
+    optional string     name                = 1;
+    optional NetworkConfig network          = 2;
+    optional string     protocol            = 3 [default = "mrpc"];
+    optional uint32     thread_num          = 4 [default = 1];
+}
+
+message ServerConfig
+{
+    repeated ServiceConfig service          = 1;
+}
+
+message ApplicationConfig
+{
+    optional CommonConfig common            = 1;
+    optional ServiceProxyConfig proxy       = 2;
+    optional ServerConfig server            = 3;
+}

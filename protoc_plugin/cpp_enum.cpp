@@ -80,13 +80,9 @@ void CppEnum::OutputToHeaderFile(google::protobuf::io::Printer& printer,
     printer.Print(vars,
             "bool $enum_name$_IsValid(int32_t value);\n"
             "std::string_view $enum_name$_Name(int32_t value);\n"
-            "bool $enum_name$_Parse(std::string_view name, int32_t& value);\n");
-    if (gen_cpp_reflection_)
-    {
-        printer.Print(vars,
-                "const mrpc::EnumDescriptor* $enum_name$_GetDescriptor();\n");
-    }
-    printer.Print("\n");
+            "bool $enum_name$_Parse(std::string_view name, int32_t& value);\n"
+            "const mrpc::EnumDescriptor* $enum_name$_GetDescriptor();\n"
+            "\n");
 }
 
 void CppEnum::OutputToSourceFile(google::protobuf::io::Printer& printer,
@@ -100,20 +96,17 @@ void CppEnum::OutputToSourceFile(google::protobuf::io::Printer& printer,
     vars["proto_full_name_length"] = std::to_string(proto_full_name_.length());
 
     // DescriptorWrapper
-    if (gen_cpp_reflection_)
-    {
-        printer.Print(vars,
-                "namespace $namespace$::$enum_name$_DescriptorWrapper\n"
-                "{\n"
-                "static mrpc::EnumDescriptor descriptor = { std::string_view(\"$proto_name$\", $proto_name_length$),\n"
-                "    std::string_view(\"$proto_full_name$\", $proto_full_name_length$),\n"
-                "    $enum_name$_IsValid,\n"
-                "    $enum_name$_Name,\n"
-                "    $enum_name$_Parse,\n"
-                "};\n"
-                "};\n"
-                "\n");
-    }
+    printer.Print(vars,
+            "namespace $namespace$::$enum_name$_DescriptorWrapper\n"
+            "{\n"
+            "static mrpc::EnumDescriptor descriptor = { std::string_view(\"$proto_name$\", $proto_name_length$),\n"
+            "    std::string_view(\"$proto_full_name$\", $proto_full_name_length$),\n"
+            "    $enum_name$_IsValid,\n"
+            "    $enum_name$_Name,\n"
+            "    $enum_name$_Parse,\n"
+            "};\n"
+            "};\n"
+            "\n");
 
     // method IsValid
     printer.Print(vars,
@@ -177,13 +170,10 @@ void CppEnum::OutputToSourceFile(google::protobuf::io::Printer& printer,
             "\n");
 
     // method GetDescriptor
-    if (gen_cpp_reflection_)
-    {
-        printer.Print(vars,
-                "const mrpc::EnumDescriptor* $namespace$::$enum_name$_GetDescriptor()\n"
-                "{\n"
-                "    return &$namespace$::$enum_name$_DescriptorWrapper::descriptor;\n"
-                "}\n"
-                "\n");
-    }
+    printer.Print(vars,
+            "const mrpc::EnumDescriptor* $namespace$::$enum_name$_GetDescriptor()\n"
+            "{\n"
+            "    return &$namespace$::$enum_name$_DescriptorWrapper::descriptor;\n"
+            "}\n"
+            "\n");
 }

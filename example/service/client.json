@@ -1,0 +1,30 @@
+{
+    "common": {
+        "app_name": "ExampleClient",
+        "loop_interval": 1000
+    },
+    "proxy": {
+        "stub": [
+            {
+                "name": "EchoService",
+                "network": {
+                    "protocol": "tcp",
+                    "host": "127.0.0.1",
+                    "port": 7000,
+                    "timeout": 5000
+                },
+                "protocol": "mrpc"
+            },
+            {
+                "name": "MathService",
+                "network": {
+                    "protocol": "tcp",
+                    "host": "127.0.0.1",
+                    "port": 7001,
+                    "timeout": 5000
+                },
+                "protocol": "mrpc"
+            }
+        ]
+    }
+}

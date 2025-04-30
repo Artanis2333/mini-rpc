@@ -2,7 +2,8 @@
 MiniRPC鼓励将第三方依赖静态编译并集成到同一路径下，这样便于框架的打包和分发，且运行MiniRPC服务的机器不必再安装依赖。
 MiniRPC的第三方依赖有：
 * [protobuf](https://github.com/protocolbuffers/protobuf)
-* [jsoncpp](https://github.com/open-source-parsers/jsoncpp)
+* [libuv](https://github.com/libuv/libuv)
+* [nlohmann/json](https://github.com/nlohmann/json)
 * [googletest](https://github.com/google/googletest)
 
 ## 支持的环境
@@ -34,24 +35,33 @@ cd ..
 cp LICENSE ${MINI_PPC_INSTALL_PATH}/3party/protobuf
 ```
 
-### jsoncpp
-编译安装jsoncpp
+### libuv
+编译安装libuv
 ```shell
-wget -O jsoncpp-1.9.5.tar.gz https://github.com/open-source-parsers/jsoncpp/archive/refs/tags/1.9.5.tar.gz
-tar zxf jsoncpp-1.9.5.tar.gz
-cd jsoncpp-1.9.5
+wget -O libuv-v1.46.0.tar.gz  https://dist.libuv.org/dist/v1.46.0/libuv-v1.46.0.tar.gz
+tar zxf libuv-v1.46.0.tar.gz
+cd libuv-v1.46.0
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_SHARED_LIBS=OFF \
-    -DBUILD_OBJECT_LIBS=OFF \
-    -DCMAKE_INSTALL_PREFIX=${MINI_PPC_INSTALL_PATH}/3party/jsoncpp \
+    -DLIBUV_BUILD_SHARED=OFF \
+    -DCMAKE_INSTALL_PREFIX=${MINI_PPC_INSTALL_PATH}/3party/libuv \
     -DCMAKE_INSTALL_LIBDIR=lib \
     ..
 make -j 4
 make install
 cd ..
-cp LICENSE ${MINI_PPC_INSTALL_PATH}/3party/jsoncpp
+cp LICENSE* ${MINI_PPC_INSTALL_PATH}/3party/libuv
+```
+
+### nlohmann/json
+安装nlohmann/json
+```shell
+git clone https://github.com/nlohmann/json.git
+cd json
+mkdir -p ${MINI_PPC_INSTALL_PATH}/3party/nlohmann/include
+cp -r include/nlohmann ${MINI_PPC_INSTALL_PATH}/3party/nlohmann/include
+cp -r LICENSE* ${MINI_PPC_INSTALL_PATH}/3party/nlohmann/
 ```
 
 ### googletest
@@ -80,9 +90,9 @@ cd mini-rpc
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Debug \
--DCMAKE_INSTALL_PREFIX=${MINI_PPC_INSTALL_PATH} \
--DCMAKE_INSTALL_LIBDIR=lib \
-..
+    -DCMAKE_INSTALL_PREFIX=${MINI_PPC_INSTALL_PATH} \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    ..
 make -j 4
 make install
 

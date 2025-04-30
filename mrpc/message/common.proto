@@ -1,0 +1,23 @@
+syntax = "proto3";
+package mrpc;
+
+enum CppType
+{
+    CPPTYPE_UNKNOWN         = 0;
+    CPPTYPE_INT32           = 1;
+    CPPTYPE_UINT32          = 2;
+    CPPTYPE_INT64           = 3;
+    CPPTYPE_UINT64          = 4;
+    CPPTYPE_FLOAT           = 5;
+    CPPTYPE_DOUBLE          = 6;
+    CPPTYPE_BOOL            = 7;
+    CPPTYPE_ENUM            = 8;
+    CPPTYPE_STRING          = 9;
+    CPPTYPE_MESSAGE         = 10;
+
+    CPPTYPE_VECTOR          = 101;
+    CPPTYPE_LIST            = 102;
+
+    CPPTYPE_MAP             = 201;
+    CPPTYPE_UNORDERED_MAP   = 202;
+}

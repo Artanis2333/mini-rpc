@@ -12,7 +12,7 @@ class Descriptor;
 class Message;
 
 template<bool skip_default>
-inline void Serialize(std::string&, Message&);
+inline void Serialize(std::string&, const Message&);
 
 class Message
 {
@@ -25,9 +25,9 @@ public:
     virtual std::string_view GetFullName() const = 0;
 
     // Reflection.
-    virtual Message* New() const;
-    virtual void CopyFrom(const Message& msg);
-    virtual const Descriptor* GetDescriptor() const;
+    virtual Message* New() const = 0;
+    virtual void CopyFrom(const Message& msg) = 0;
+    virtual const Descriptor* GetDescriptor() const = 0;
 
     // Clear data.
     virtual void Clear() = 0;
@@ -35,31 +35,31 @@ public:
     // Byte size.
     inline size_t GetCachedSize() const { return cached_size_; }
 
-    inline size_t ByteSize(bool skip_default = true)
+    inline size_t ByteSize(bool skip_default = true) const
     {
         if (skip_default) return ByteSizeSkipDefault();
         return ByteSizeNotSkipDefault();
     }
 
     // Serialize.
-    void SerializeToString(std::string& s, bool skip_default = true);
+    void SerializeToString(std::string& s, bool skip_default = true) const;
 
     // Parse.
     bool ParseFromString(std::string_view s);
 
 protected:
-    size_t cached_size_ = 0;
+    mutable size_t cached_size_ = 0;
 
-    virtual size_t ByteSizeSkipDefault() = 0;
-    virtual size_t ByteSizeNotSkipDefault() = 0;
+    virtual size_t ByteSizeSkipDefault() const = 0;
+    virtual size_t ByteSizeNotSkipDefault() const = 0;
 
-    virtual void SerializeToStringSkipDefault(std::string& s) = 0;
-    virtual void SerializeToStringNotSkipDefault(std::string& s) = 0;
+    virtual void SerializeToStringSkipDefault(std::string& s) const = 0;
+    virtual void SerializeToStringNotSkipDefault(std::string& s) const = 0;
 
     virtual bool ParseFromBytes(const uint8_t* begin, const uint8_t* const end) = 0;
 
-    friend void Serialize<false>(std::string&, Message&);
-    friend void Serialize<true>(std::string&, Message&);
+    friend void Serialize<false>(std::string&, const Message&);
+    friend void Serialize<true>(std::string&, const Message&);
     friend bool Parse(Message&, const uint8_t*&, const uint8_t* const);
 };
 
@@ -86,6 +86,7 @@ void ReflectableMessage<T>::CopyFrom(const Message& msg)
     T* dst = dynamic_cast<T*>(this);
     if (dst == nullptr) return;
 
+    if (src == dst) return;
     *dst = *src;
 }
 
