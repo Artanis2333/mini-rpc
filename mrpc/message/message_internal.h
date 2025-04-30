@@ -3,10 +3,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
-#include <vector>
-#include <list>
-#include <map>
-#include <unordered_map>
+#include <type_traits>
 
 #include <mrpc/message/message.h>
 
@@ -276,7 +273,7 @@ inline size_t CalcByteSize<TYPE_STRING>(const std::string& str)
 }
 
 template<bool skip_default>
-inline size_t CalcByteSize(Message& msg)
+inline size_t CalcByteSize(const Message& msg)
 {
     size_t size = msg.ByteSize(skip_default);
     return CalcByteSize<TYPE_VAR_UINT32>(static_cast<uint32_t>(size)) + size;
@@ -290,7 +287,7 @@ inline size_t CalcByteSizeWithTag(uint32_t tag, typename FieldROCppTypeTraits<fi
 }
 
 template<bool skip_default>
-inline size_t CalcByteSizeWithTag(uint32_t tag, Message& msg)
+inline size_t CalcByteSizeWithTag(uint32_t tag, const Message& msg)
 {
     size_t size = msg.ByteSize(skip_default);
     if (size == 0) return 0;
@@ -298,14 +295,15 @@ inline size_t CalcByteSizeWithTag(uint32_t tag, Message& msg)
         CalcByteSize<TYPE_VAR_UINT32>(static_cast<uint32_t>(size)) + size;
 }
 
-template<FieldType field_type>
-inline size_t CalcVectorByteSizeWithTag(uint32_t tag, const std::vector<typename FieldCppTypeTraits<field_type>::ValueType>& container, uint32_t& cached_size)
+template<FieldType field_type, typename T>
+    requires(std::is_same_v<typename T::value_type, typename FieldCppTypeTraits<field_type>::ValueType>)
+inline size_t CalcRepeatedByteSizeWithTag(uint32_t tag, const T& container, uint32_t& cached_size)
 {
     cached_size = 0;
     if (container.empty()) return 0;
 
     size_t size = 0;
-    for (typename FieldROCppTypeTraits<field_type>::ValueType value : container)
+    for (const typename FieldROCppTypeTraits<field_type>::ValueType value : container)
     {
         size += CalcByteSize<field_type>(value);
     }
@@ -313,8 +311,10 @@ inline size_t CalcVectorByteSizeWithTag(uint32_t tag, const std::vector<typename
     return CalcByteSize<TYPE_VAR_UINT32>((tag << 3) | WIRETYPE_LENGTH_DELIMITED) + CalcByteSize<TYPE_VAR_UINT32>(static_cast<uint32_t>(size)) + size;
 }
 
-// std::vector<std::string>应使用本函数
-inline size_t CalcVectorByteSizeWithTag(uint32_t tag, const std::vector<std::string>& container)
+// std::string应使用本函数，上面的函数使用了编码优化
+template<typename T>
+    requires(std::is_same_v<typename T::value_type, std::string>)
+inline size_t CalcRepeatedByteSizeWithTag(uint32_t tag, const T& container)
 {
     if (container.empty()) return 0;
 
@@ -326,62 +326,24 @@ inline size_t CalcVectorByteSizeWithTag(uint32_t tag, const std::vector<std::str
     return size;
 }
 
-template<typename T, bool skip_default>
-inline size_t CalcVectorByteSizeWithTag(uint32_t tag, std::vector<T>& container)
+template<bool skip_default, typename T>
+    requires(std::is_base_of_v<Message, typename T::value_type>)
+inline size_t CalcRepeatedByteSizeWithTag(uint32_t tag, const T& container)
 {
     if (container.empty()) return 0;
 
     size_t size = CalcByteSize<TYPE_VAR_UINT32>((tag << 3) | WIRETYPE_LENGTH_DELIMITED) * container.size();
-    for (T& msg : container)
+    for (const typename T::value_type& msg : container)
     {
         size += CalcByteSize<skip_default>(msg);
     }
     return size;
 }
 
-template<FieldType field_type>
-inline size_t CalcListByteSizeWithTag(uint32_t tag, const std::list<typename FieldCppTypeTraits<field_type>::ValueType>& container, uint32_t& cached_size)
-{
-    cached_size = 0;
-    if (container.empty()) return 0;
-
-    size_t size = 0;
-    for (typename FieldROCppTypeTraits<field_type>::ValueType value : container)
-    {
-        size += CalcByteSize<field_type>(value);
-    }
-    cached_size = static_cast<uint32_t>(size);
-    return CalcByteSize<TYPE_VAR_UINT32>((tag << 3) | WIRETYPE_LENGTH_DELIMITED) + CalcByteSize<TYPE_VAR_UINT32>(static_cast<uint32_t>(size)) + size;
-}
-
-// std::list<std::string>应使用本函数
-inline size_t CalcListByteSizeWithTag(uint32_t tag, const std::list<std::string>& container)
-{
-    if (container.empty()) return 0;
-
-    size_t size = CalcByteSize<TYPE_VAR_UINT32>((tag << 3) | WIRETYPE_LENGTH_DELIMITED) * container.size();
-    for (const std::string& str : container)
-    {
-        size += CalcByteSize<TYPE_STRING>(str);
-    }
-    return size;
-}
-
-template<typename T, bool skip_default>
-inline size_t CalcListByteSizeWithTag(uint32_t tag, std::list<T>& container)
-{
-    if (container.empty()) return 0;
-
-    size_t size = CalcByteSize<TYPE_VAR_UINT32>((tag << 3) | WIRETYPE_LENGTH_DELIMITED) * container.size();
-    for (T& msg : container)
-    {
-        size += CalcByteSize<skip_default>(msg);
-    }
-    return size;
-}
-
-template<FieldType key_field_type, FieldType value_field_type>
-inline size_t CalcMapByteSizeWithTag(uint32_t tag, const std::map<typename FieldCppTypeTraits<key_field_type>::ValueType, typename FieldCppTypeTraits<value_field_type>::ValueType>& container)
+template<FieldType key_field_type, FieldType value_field_type, typename T>
+    requires(std::is_same_v<typename T::key_type, typename FieldCppTypeTraits<key_field_type>::ValueType> &&
+        std::is_same_v<typename T::mapped_type, typename FieldCppTypeTraits<value_field_type>::ValueType>)
+inline size_t CalcMapByteSizeWithTag(uint32_t tag, const T& container)
 {
     if (container.empty()) return 0;
 
@@ -394,36 +356,10 @@ inline size_t CalcMapByteSizeWithTag(uint32_t tag, const std::map<typename Field
     return size;
 }
 
-template<FieldType key_field_type, typename T, bool skip_default>
-inline size_t CalcMapByteSizeWithTag(uint32_t tag, std::map<typename FieldCppTypeTraits<key_field_type>::ValueType, T>& container)
-{
-    if (container.empty()) return 0;
-
-    size_t size = CalcByteSize<TYPE_VAR_UINT32>((tag << 3) | WIRETYPE_LENGTH_DELIMITED) * container.size();
-    for (auto& [key, value] : container)
-    {
-        size_t msg_size = CalcByteSize<key_field_type>(key) + CalcByteSize<skip_default>(value);
-        size += 2 + CalcByteSize<TYPE_VAR_UINT32>(static_cast<uint32_t>(msg_size)) + msg_size;
-    }
-    return size;
-}
-
-template<FieldType key_field_type, FieldType value_field_type>
-inline size_t CalcUnorderedMapByteSizeWithTag(uint32_t tag, const std::unordered_map<typename FieldCppTypeTraits<key_field_type>::ValueType, typename FieldCppTypeTraits<value_field_type>::ValueType>& container)
-{
-    if (container.empty()) return 0;
-
-    size_t size = CalcByteSize<TYPE_VAR_UINT32>((tag << 3) | WIRETYPE_LENGTH_DELIMITED) * container.size();
-    for (auto& [key, value] : container)
-    {
-        size_t msg_size = CalcByteSize<key_field_type>(key) + CalcByteSize<value_field_type>(value);
-        size += 2 + CalcByteSize<TYPE_VAR_UINT32>(static_cast<uint32_t>(msg_size)) + msg_size;
-    }
-    return size;
-}
-
-template<FieldType key_field_type, typename T, bool skip_default>
-inline size_t CalcUnorderedMapByteSizeWithTag(uint32_t tag, std::unordered_map<typename FieldCppTypeTraits<key_field_type>::ValueType, T>& container)
+template<FieldType key_field_type, bool skip_default, typename T>
+    requires(std::is_same_v<typename T::key_type, typename FieldCppTypeTraits<key_field_type>::ValueType> &&
+        std::is_base_of_v<Message, typename T::mapped_type>)
+inline size_t CalcMapByteSizeWithTag(uint32_t tag, const T& container)
 {
     if (container.empty()) return 0;
 
@@ -529,7 +465,7 @@ inline void Serialize<TYPE_STRING>(std::string& s, const std::string& str)
 }
 
 template<bool skip_default>
-inline void Serialize(std::string& s, Message& msg)
+inline void Serialize(std::string& s, const Message& msg)
 {
     Serialize<TYPE_VAR_UINT32>(s, static_cast<uint32_t>(msg.GetCachedSize()));
     if (skip_default)
@@ -550,7 +486,7 @@ inline void SerializeWithTag(std::string& s, uint32_t tag, typename FieldROCppTy
 }
 
 template<bool skip_default>
-inline void SerializeWithTag(std::string& s, uint32_t tag, Message& msg)
+inline void SerializeWithTag(std::string& s, uint32_t tag, const Message& msg)
 {
     size_t size = msg.GetCachedSize();
     if (size == 0) return;
@@ -558,21 +494,24 @@ inline void SerializeWithTag(std::string& s, uint32_t tag, Message& msg)
     Serialize<skip_default>(s, msg);
 }
 
-template<FieldType field_type>
-inline void SerializeVectorWithTag(std::string& s, uint32_t tag, const std::vector<typename FieldCppTypeTraits<field_type>::ValueType>& container, uint32_t cached_size)
+template<FieldType field_type, typename T>
+    requires(std::is_same_v<typename T::value_type, typename FieldCppTypeTraits<field_type>::ValueType>)
+inline void SerializeRepeatedWithTag(std::string& s, uint32_t tag, const T& container, uint32_t cached_size)
 {
     if (container.empty()) return;
 
     Serialize<TYPE_VAR_UINT32>(s, (tag << 3) | WIRETYPE_LENGTH_DELIMITED);
     Serialize<TYPE_VAR_UINT32>(s, cached_size);
-    for (typename FieldROCppTypeTraits<field_type>::ValueType value : container)
+    for (const typename FieldROCppTypeTraits<field_type>::ValueType value : container)
     {
         Serialize<field_type>(s, value);
     }
 }
 
-// std::vector<std::string>应使用本函数
-inline void SerializeVectorWithTag(std::string& s, uint32_t tag, const std::vector<std::string>& container)
+// std::string应使用本函数，上面的函数使用了编码优化
+template<typename T>
+    requires(std::is_same_v<typename T::value_type, std::string>)
+inline void SerializeRepeatedWithTag(std::string& s, uint32_t tag, const T& container)
 {
     if (container.empty()) return;
 
@@ -583,57 +522,23 @@ inline void SerializeVectorWithTag(std::string& s, uint32_t tag, const std::vect
     }
 }
 
-template<typename T, bool skip_default>
-inline void SerializeVectorWithTag(std::string& s, uint32_t tag, std::vector<T>& container)
+template<bool skip_default, typename T>
+    requires(std::is_base_of_v<Message, typename T::value_type>)
+inline void SerializeRepeatedWithTag(std::string& s, uint32_t tag, const T& container)
 {
     if (container.empty()) return;
 
-    for (T& msg : container)
+    for (const typename T::value_type& msg : container)
     {
         Serialize<TYPE_VAR_UINT32>(s, (tag << 3) | WIRETYPE_LENGTH_DELIMITED);
         Serialize<skip_default>(s, msg);
     }
 }
 
-template<FieldType field_type>
-inline void SerializeListWithTag(std::string& s, uint32_t tag, const std::list<typename FieldCppTypeTraits<field_type>::ValueType>& container, uint32_t cached_size)
-{
-    if (container.empty()) return;
-
-    Serialize<TYPE_VAR_UINT32>(s, (tag << 3) | WIRETYPE_LENGTH_DELIMITED);
-    Serialize<TYPE_VAR_UINT32>(s, cached_size);
-    for (typename FieldROCppTypeTraits<field_type>::ValueType value : container)
-    {
-        Serialize<field_type>(s, value);
-    }
-}
-
-// std::list<std::string>应使用本函数
-inline void SerializeListWithTag(std::string& s, uint32_t tag, const std::list<std::string>& container)
-{
-    if (container.empty()) return;
-
-    for (const std::string& str : container)
-    {
-        Serialize<TYPE_VAR_UINT32>(s, (tag << 3) | WIRETYPE_LENGTH_DELIMITED);
-        Serialize<TYPE_STRING>(s, str);
-    }
-}
-
-template<typename T, bool skip_default>
-inline void SerializeListWithTag(std::string& s, uint32_t tag, std::list<T>& container)
-{
-    if (container.empty()) return;
-
-    for (T& msg : container)
-    {
-        Serialize<TYPE_VAR_UINT32>(s, (tag << 3) | WIRETYPE_LENGTH_DELIMITED);
-        Serialize<skip_default>(s, msg);
-    }
-}
-
-template<FieldType key_field_type, FieldType value_field_type>
-inline void SerializeMapWithTag(std::string& s, uint32_t tag, const std::map<typename FieldCppTypeTraits<key_field_type>::ValueType, typename FieldCppTypeTraits<value_field_type>::ValueType>& container)
+template<FieldType key_field_type, FieldType value_field_type, typename T>
+    requires(std::is_same_v<typename T::key_type, typename FieldCppTypeTraits<key_field_type>::ValueType> &&
+        std::is_same_v<typename T::mapped_type, typename FieldCppTypeTraits<value_field_type>::ValueType>)
+inline void SerializeMapWithTag(std::string& s, uint32_t tag, const T& container)
 {
     if (container.empty()) return;
 
@@ -651,48 +556,10 @@ inline void SerializeMapWithTag(std::string& s, uint32_t tag, const std::map<typ
     }
 }
 
-template<FieldType key_field_type, typename T, bool skip_default>
-inline void SerializeMapWithTag(std::string& s, uint32_t tag, std::map<typename FieldCppTypeTraits<key_field_type>::ValueType, T>& container)
-{
-    if (container.empty()) return;
-
-    for (auto& [key, value] : container)
-    {
-        // 是否还有优化空间?
-        size_t msg_size = 2 + CalcByteSize<key_field_type>(key) +
-            CalcByteSize<TYPE_VAR_UINT32>(static_cast<uint32_t>(value.GetCachedSize())) +
-            value.GetCachedSize();
-
-        Serialize<TYPE_VAR_UINT32>(s, (tag << 3) | WIRETYPE_LENGTH_DELIMITED);
-        Serialize<TYPE_VAR_UINT32>(s, static_cast<uint32_t>(msg_size));
-        s.push_back(static_cast<char>(0x08 | FieldWireTypeTraits<key_field_type>::kWireType));
-        Serialize<key_field_type>(s, key);
-        s.push_back(static_cast<char>(0x10 | WIRETYPE_LENGTH_DELIMITED));
-        Serialize<skip_default>(s, value);
-    }
-}
-
-template<FieldType key_field_type, FieldType value_field_type>
-inline void SerializeUnorderedMapWithTag(std::string& s, uint32_t tag, const std::unordered_map<typename FieldCppTypeTraits<key_field_type>::ValueType, typename FieldCppTypeTraits<value_field_type>::ValueType>& container)
-{
-    if (container.empty()) return;
-
-    for (auto& [key, value] : container)
-    {
-        // 是否还有优化空间?
-        size_t msg_size = 2 + CalcByteSize<key_field_type>(key) + CalcByteSize<value_field_type>(value);
-
-        Serialize<TYPE_VAR_UINT32>(s, (tag << 3) | WIRETYPE_LENGTH_DELIMITED);
-        Serialize<TYPE_VAR_UINT32>(s, static_cast<uint32_t>(msg_size));
-        s.push_back(static_cast<char>(0x08 | FieldWireTypeTraits<key_field_type>::kWireType));
-        Serialize<key_field_type>(s, key);
-        s.push_back(static_cast<char>(0x10 | FieldWireTypeTraits<value_field_type>::kWireType));
-        Serialize<value_field_type>(s, value);
-    }
-}
-
-template<FieldType key_field_type, typename T, bool skip_default>
-inline void SerializeUnorderedMapWithTag(std::string& s, uint32_t tag, std::unordered_map<typename FieldCppTypeTraits<key_field_type>::ValueType, T>& container)
+template<FieldType key_field_type, bool skip_default, typename T>
+    requires(std::is_same_v<typename T::key_type, typename FieldCppTypeTraits<key_field_type>::ValueType> &&
+        std::is_base_of_v<Message, typename T::mapped_type>)
+inline void SerializeMapWithTag(std::string& s, uint32_t tag, const T& container)
 {
     if (container.empty()) return;
 
@@ -866,8 +733,9 @@ inline bool ParseCheckType(uint32_t type, Message& msg, const uint8_t*& begin, c
     return Parse(msg, begin, end);
 }
 
-template<FieldType field_type>
-inline bool ParseVectorCheckType(uint32_t type, std::vector<typename FieldCppTypeTraits<field_type>::ValueType>& container, const uint8_t*& begin, const uint8_t* const end)
+template<FieldType field_type, typename T>
+    requires(std::is_same_v<typename T::value_type, typename FieldCppTypeTraits<field_type>::ValueType>)
+inline bool ParseRepeatedCheckType(uint32_t type, T& container, const uint8_t*& begin, const uint8_t* const end)
 {
     if (type == WIRETYPE_LENGTH_DELIMITED)
     {
@@ -898,8 +766,9 @@ inline bool ParseVectorCheckType(uint32_t type, std::vector<typename FieldCppTyp
     return false;
 }
 
-template<>
-inline bool ParseVectorCheckType<TYPE_STRING>(uint32_t type, std::vector<std::string>& container, const uint8_t*& begin, const uint8_t* const end)
+template<typename T>
+    requires(std::is_same_v<typename T::value_type, std::string>)
+inline bool ParseRepeatedCheckType(uint32_t type, T& container, const uint8_t*& begin, const uint8_t* const end)
 {
     if (type != WIRETYPE_LENGTH_DELIMITED) return false;
 
@@ -914,7 +783,8 @@ inline bool ParseVectorCheckType<TYPE_STRING>(uint32_t type, std::vector<std::st
 }
 
 template<typename T>
-inline bool ParseVectorCheckType(uint32_t type, std::vector<T>& container, const uint8_t*& begin, const uint8_t* const end)
+    requires(std::is_base_of_v<Message, typename T::value_type>)
+inline bool ParseRepeatedCheckType(uint32_t type, T& container, const uint8_t*& begin, const uint8_t* const end)
 {
     if (type != WIRETYPE_LENGTH_DELIMITED) return false;
 
@@ -928,70 +798,10 @@ inline bool ParseVectorCheckType(uint32_t type, std::vector<T>& container, const
     return true;
 }
 
-template<FieldType field_type>
-inline bool ParseListCheckType(uint32_t type, std::list<typename FieldCppTypeTraits<field_type>::ValueType>& container, const uint8_t*& begin, const uint8_t* const end)
-{
-    if (type == WIRETYPE_LENGTH_DELIMITED)
-    {
-        uint32_t size = 0;
-        if (!Parse<TYPE_VAR_UINT32>(size, begin, end)) return false;
-
-        const uint8_t* const real_end = begin + size;
-        if (real_end > end) return false;
-
-        while (begin < real_end)
-        {
-            typename FieldCppTypeTraits<field_type>::ValueType value;
-            if (!Parse<field_type>(value, begin, real_end)) return false;
-
-            container.push_back(value);
-        }
-        return true;
-    }
-    else if (type == FieldWireTypeTraits<field_type>::kWireType)
-    {
-        typename FieldCppTypeTraits<field_type>::ValueType value;
-        if (!Parse<field_type>(value, begin, end)) return false;
-
-        container.push_back(value);
-        return true;
-    }
-
-    return false;
-}
-
-template<>
-inline bool ParseListCheckType<TYPE_STRING>(uint32_t type, std::list<std::string>& container, const uint8_t*& begin, const uint8_t* const end)
-{
-    if (type != WIRETYPE_LENGTH_DELIMITED) return false;
-
-    container.emplace_back();
-    if (!Parse<TYPE_STRING>(container.back(), begin, end))
-    {
-        container.pop_back();
-        return false;
-    }
-
-    return true;
-}
-
-template<typename T>
-inline bool ParseListCheckType(uint32_t type, std::list<T>& container, const uint8_t*& begin, const uint8_t* const end)
-{
-    if (type != WIRETYPE_LENGTH_DELIMITED) return false;
-
-    container.emplace_back();
-    if (!Parse(container.back(), begin, end))
-    {
-        container.pop_back();
-        return false;
-    }
-
-    return true;
-}
-
-template<FieldType key_field_type, FieldType value_field_type>
-inline bool ParseMapCheckType(uint32_t type, std::map<typename FieldCppTypeTraits<key_field_type>::ValueType, typename FieldCppTypeTraits<value_field_type>::ValueType>& container, const uint8_t*& begin, const uint8_t* const end)
+template<FieldType key_field_type, FieldType value_field_type, typename T>
+    requires(std::is_same_v<typename T::key_type, typename FieldCppTypeTraits<key_field_type>::ValueType> &&
+        std::is_same_v<typename T::mapped_type, typename FieldCppTypeTraits<value_field_type>::ValueType>)
+inline bool ParseMapCheckType(uint32_t type, T& container, const uint8_t*& begin, const uint8_t* const end)
 {
     if (type != WIRETYPE_LENGTH_DELIMITED) return false;
 
@@ -1021,7 +831,9 @@ inline bool ParseMapCheckType(uint32_t type, std::map<typename FieldCppTypeTrait
 }
 
 template<FieldType key_field_type, typename T>
-inline bool ParseMapCheckType(uint32_t type, std::map<typename FieldCppTypeTraits<key_field_type>::ValueType, T>& container, const uint8_t*& begin, const uint8_t* const end)
+    requires(std::is_same_v<typename T::key_type, typename FieldCppTypeTraits<key_field_type>::ValueType> &&
+        std::is_base_of_v<Message, typename T::mapped_type>)
+inline bool ParseMapCheckType(uint32_t type, T& container, const uint8_t*& begin, const uint8_t* const end)
 {
     if (type != WIRETYPE_LENGTH_DELIMITED) return false;
 
@@ -1040,67 +852,7 @@ inline bool ParseMapCheckType(uint32_t type, std::map<typename FieldCppTypeTrait
     if (begin >= real_end || begin[0] != (0x10 | WIRETYPE_LENGTH_DELIMITED)) return false;
     begin += 1;
 
-    T& value = container[key];
-    if (!Parse(value, begin, real_end) || begin != real_end)
-    {
-        container.erase(key);
-        return false;
-    }
-
-    return true;
-}
-
-template<FieldType key_field_type, FieldType value_field_type>
-inline bool ParseUnorderedMapCheckType(uint32_t type, std::unordered_map<typename FieldCppTypeTraits<key_field_type>::ValueType, typename FieldCppTypeTraits<value_field_type>::ValueType>& container, const uint8_t*& begin, const uint8_t* const end)
-{
-    if (type != WIRETYPE_LENGTH_DELIMITED) return false;
-
-    uint32_t size = 0;
-    if (!Parse<TYPE_VAR_UINT32>(size, begin, end)) return false;
-
-    const uint8_t* const real_end = begin + size;
-    if (real_end > end) return false;
-
-    if (begin >= real_end || begin[0] != (0x08 | FieldWireTypeTraits<key_field_type>::kWireType)) return false;
-    begin += 1;
-
-    typename FieldCppTypeTraits<key_field_type>::ValueType key;
-    if (!Parse<key_field_type>(key, begin, real_end)) return false;
-
-    if (begin >= real_end || begin[0] != (0x10 | FieldWireTypeTraits<value_field_type>::kWireType)) return false;
-    begin += 1;
-
-    typename FieldCppTypeTraits<value_field_type>::ValueType& value = container[key];
-    if (!Parse<value_field_type>(value, begin, real_end) || begin != real_end)
-    {
-        container.erase(key);
-        return false;
-    }
-
-    return true;
-}
-
-template<FieldType key_field_type, typename T>
-inline bool ParseUnorderedMapCheckType(uint32_t type, std::unordered_map<typename FieldCppTypeTraits<key_field_type>::ValueType, T>& container, const uint8_t*& begin, const uint8_t* const end)
-{
-    if (type != WIRETYPE_LENGTH_DELIMITED) return false;
-
-    uint32_t size = 0;
-    if (!Parse<TYPE_VAR_UINT32>(size, begin, end)) return false;
-
-    const uint8_t* const real_end = begin + size;
-    if (real_end > end) return false;
-
-    if (begin >= real_end || begin[0] != (0x08 | FieldWireTypeTraits<key_field_type>::kWireType)) return false;
-    begin += 1;
-
-    typename FieldCppTypeTraits<key_field_type>::ValueType key;
-    if (!Parse<key_field_type>(key, begin, real_end)) return false;
-
-    if (begin >= real_end || begin[0] != (0x10 | WIRETYPE_LENGTH_DELIMITED)) return false;
-    begin += 1;
-
-    T& value = container[key];
+    typename T::mapped_type& value = container[key];
     if (!Parse(value, begin, real_end) || begin != real_end)
     {
         container.erase(key);

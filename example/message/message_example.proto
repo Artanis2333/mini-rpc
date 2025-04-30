@@ -1,0 +1,38 @@
+syntax = "proto3";
+package example;
+
+import "mrpc/options.proto";
+
+enum Gender
+{
+    UNSPECIFIED = 0;
+    MALE = 1;
+    FEMALE = 2;
+    OTHER = 3;
+};
+
+message Address
+{
+    string country = 1;
+    string city = 2;
+    string street = 3;
+};
+
+message Person
+{
+    string name = 1;
+    int32 age = 2;
+    Gender gender = 3;
+    string email = 4;
+    repeated string phone_numbers = 5;
+    Address address = 6;
+};
+
+message StlExample
+{
+    repeated int32 vector_value = 1;
+    repeated uint32 list_value = 2 [(mrpc.cpp_type) = list];
+    map<int32, string> map_value = 3;
+    map<string, uint32> unordered_map_value = 4 [(mrpc.cpp_type) = unordered_map];
+};
+

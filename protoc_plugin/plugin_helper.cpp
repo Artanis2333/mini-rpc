@@ -27,7 +27,19 @@ std::string DotNameToCppTypeName(const std::string &dot_name)
     return type_name;
 }
 
-bool IsClassIgnored(const std::string &class_full_name)
+uint32_t APHash(std::string_view str)
 {
-    return class_full_name == "mrpc.Void";
+    uint32_t hash = 0;
+    for (size_t i = 0; i < str.length(); i++)
+    {
+        if ((i & 1) == 0)
+        {
+            hash ^= ((hash << 7) ^ str[i] ^ (hash >> 3));
+        }
+        else
+        {
+            hash ^= (~((hash << 11) ^ str[i] ^ (hash >> 5)));
+        }
+    }
+    return hash;
 }

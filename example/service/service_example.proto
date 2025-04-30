@@ -1,0 +1,34 @@
+syntax = "proto3";
+package example;
+
+message EchoRequest
+{
+    string      data                = 1;
+};
+
+message EchoResponse
+{
+    string      data                = 1;
+};
+
+service EchoService
+{
+    rpc Echo(EchoRequest) returns (EchoResponse);
+};
+
+message AddRequest
+{
+    int32       a                   = 1;
+    int32       b                   = 2;
+};
+
+message AddResponse
+{
+    int32       sum                 = 1;
+};
+
+service MathService
+{
+    rpc Add(AddRequest) returns (AddResponse);
+};
+

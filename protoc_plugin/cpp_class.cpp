@@ -37,15 +37,8 @@ void CppClass::OutputToHeaderFile(google::protobuf::io::Printer& printer,
     // class
     vars["class_name"] = class_name_;
 
-    if (gen_cpp_reflection_)
-    {
-        printer.Print(vars, "class $class_name$ final : public mrpc::ReflectableMessage<$class_name$>\n");
-    }
-    else
-    {
-        printer.Print(vars, "class $class_name$ final : public mrpc::Message\n");
-    }
-    printer.Print("{\n"
+    printer.Print(vars, "class $class_name$ final : public mrpc::ReflectableMessage<$class_name$>\n"
+            "{\n"
             "public:\n");
 
     // fields
@@ -58,13 +51,10 @@ void CppClass::OutputToHeaderFile(google::protobuf::io::Printer& printer,
     // methods
     printer.Print(
             "    std::string_view GetName() const override;\n"
-            "    std::string_view GetFullName() const override;\n");
-    if (gen_cpp_reflection_)
-    {
-        printer.Print("    const mrpc::Descriptor* GetDescriptor() const override;\n");
-        printer.Print("    static const mrpc::Descriptor* GetClassDescriptor();\n");
-    }
-    printer.Print("    void Clear() override;\n"
+            "    std::string_view GetFullName() const override;\n"
+            "    const mrpc::Descriptor* GetDescriptor() const override;\n"
+            "    static const mrpc::Descriptor* GetClassDescriptor();\n"
+            "    void Clear() override;\n"
             "\n");
 
     // class
@@ -72,10 +62,10 @@ void CppClass::OutputToHeaderFile(google::protobuf::io::Printer& printer,
 
     // methods
     printer.Print(
-            "    size_t ByteSizeSkipDefault() override;\n"
-            "    size_t ByteSizeNotSkipDefault() override;\n"
-            "    void SerializeToStringSkipDefault(std::string& s) override;\n"
-            "    void SerializeToStringNotSkipDefault(std::string& s) override;\n"
+            "    size_t ByteSizeSkipDefault() const override;\n"
+            "    size_t ByteSizeNotSkipDefault() const override;\n"
+            "    void SerializeToStringSkipDefault(std::string& s) const override;\n"
+            "    void SerializeToStringNotSkipDefault(std::string& s) const override;\n"
             "    bool ParseFromBytes(const uint8_t* begin, const uint8_t* const end) override;\n"
             "\n");
 
@@ -105,30 +95,27 @@ void CppClass::OutputToSourceFile(google::protobuf::io::Printer& printer,
     vars["proto_full_name_length"] = std::to_string(proto_full_name_.length());
 
     // DescriptorWrapper
-    if (gen_cpp_reflection_)
+    printer.Print(vars,
+            "namespace $namespace$::$class_name$_DescriptorWrapper\n"
+            "{\n"
+            );
+    for (auto& field : fields_)
     {
-        printer.Print(vars,
-                "namespace $namespace$::$class_name$_DescriptorWrapper\n"
-                "{\n"
-                );
-        for (auto& field : fields_)
-        {
-            field.OutputDescriptorWrapperMember(printer, vars);
-        }
-        printer.Print(vars,
-                "static mrpc::DescriptorImpl<$class_name$> descriptor = { std::string_view(\"$proto_name$\", $proto_name_length$),\n"
-                "    std::string_view(\"$proto_full_name$\", $proto_full_name_length$),\n"
-                "    {\n"
-                );
-        for (auto& field : fields_)
-        {
-            field.OutputDescriptorInitializerList(printer, vars);
-        }
-        printer.Print("    }\n"
-                "};\n"
-                "};\n"
-                "\n");
+        field.OutputDescriptorWrapperMember(printer, vars);
     }
+    printer.Print(vars,
+            "static mrpc::DescriptorImpl<$class_name$> descriptor = { std::string_view(\"$proto_name$\", $proto_name_length$),\n"
+            "    std::string_view(\"$proto_full_name$\", $proto_full_name_length$),\n"
+            "    {\n"
+            );
+    for (auto& field : fields_)
+    {
+        field.OutputDescriptorInitializerList(printer, vars);
+    }
+    printer.Print("    }\n"
+            "};\n"
+            "};\n"
+            "\n");
 
     // method GetName
     printer.Print(vars, "std::string_view $namespace$::$class_name$::GetName() const\n"
@@ -145,19 +132,16 @@ void CppClass::OutputToSourceFile(google::protobuf::io::Printer& printer,
             "\n");
 
     // method GetDescriptor
-    if (gen_cpp_reflection_)
-    {
-        printer.Print(vars, "const mrpc::Descriptor* $namespace$::$class_name$::GetDescriptor() const\n"
-                "{\n"
-                "    return GetClassDescriptor();\n"
-                "}\n"
-                "\n");
-        printer.Print(vars, "const mrpc::Descriptor* $namespace$::$class_name$::GetClassDescriptor()\n"
-                "{\n"
-                "    return &$class_name$_DescriptorWrapper::descriptor;\n"
-                "}\n"
-                "\n");
-    }
+    printer.Print(vars, "const mrpc::Descriptor* $namespace$::$class_name$::GetDescriptor() const\n"
+            "{\n"
+            "    return GetClassDescriptor();\n"
+            "}\n"
+            "\n");
+    printer.Print(vars, "const mrpc::Descriptor* $namespace$::$class_name$::GetClassDescriptor()\n"
+            "{\n"
+            "    return &$class_name$_DescriptorWrapper::descriptor;\n"
+            "}\n"
+            "\n");
 
     // method Clear
     printer.Print(vars, "void $namespace$::$class_name$::Clear()\n"
@@ -170,7 +154,7 @@ void CppClass::OutputToSourceFile(google::protobuf::io::Printer& printer,
             "\n");
 
     // method ByteSize
-    printer.Print(vars, "size_t $namespace$::$class_name$::ByteSizeSkipDefault()\n"
+    printer.Print(vars, "size_t $namespace$::$class_name$::ByteSizeSkipDefault() const\n"
             "{\n"
             "    size_t size = 0;\n");
     for (auto& field : fields_)
@@ -183,7 +167,7 @@ void CppClass::OutputToSourceFile(google::protobuf::io::Printer& printer,
             "\n");
 
     // method ByteSize
-    printer.Print(vars, "size_t $namespace$::$class_name$::ByteSizeNotSkipDefault()\n"
+    printer.Print(vars, "size_t $namespace$::$class_name$::ByteSizeNotSkipDefault() const\n"
             "{\n"
             "    size_t size = 0;\n");
     for (auto& field : fields_)
@@ -196,8 +180,12 @@ void CppClass::OutputToSourceFile(google::protobuf::io::Printer& printer,
             "\n");
 
     // method SerializeToString
-    printer.Print(vars, "void $namespace$::$class_name$::SerializeToStringSkipDefault(std::string& s)\n"
+    printer.Print(vars, "void $namespace$::$class_name$::SerializeToStringSkipDefault(std::string& s) const\n"
             "{\n");
+    if (fields_.empty())
+    {
+        printer.Print("    (void)s;\n");
+    }
     for (auto& field : fields_)
     {
         field.OutputSerializeToStringSkipDefaultMethod(printer, vars);
@@ -206,8 +194,12 @@ void CppClass::OutputToSourceFile(google::protobuf::io::Printer& printer,
             "\n");
 
     // method SerializeToString
-    printer.Print(vars, "void $namespace$::$class_name$::SerializeToStringNotSkipDefault(std::string& s)\n"
+    printer.Print(vars, "void $namespace$::$class_name$::SerializeToStringNotSkipDefault(std::string& s) const\n"
             "{\n");
+    if (fields_.empty())
+    {
+        printer.Print("    (void)s;\n");
+    }
     for (auto& field : fields_)
     {
         field.OutputSerializeToStringNotSkipDefaultMethod(printer, vars);

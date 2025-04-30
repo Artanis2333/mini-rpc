@@ -1,6 +1,7 @@
 #include <cassert>
-
 #include <google/protobuf/io/printer.h>
+
+#include <mrpc/options.pb.h>
 
 #include "cpp_field.h"
 #include "plugin_helper.h"
@@ -8,7 +9,12 @@
 //
 // CppField
 //
-mrpc::CppType const CppField::kPbCppTypeToMrpcCppType[google::protobuf::FieldDescriptor::MAX_CPPTYPE + 1] =
+static_assert((int32_t)mrpc::CPPTYPE_VECTOR == (int32_t)mrpc::vector);
+static_assert((int32_t)mrpc::CPPTYPE_LIST == (int32_t)mrpc::list);
+static_assert((int32_t)mrpc::CPPTYPE_MAP == (int32_t)mrpc::map);
+static_assert((int32_t)mrpc::CPPTYPE_UNORDERED_MAP == (int32_t)mrpc::unordered_map);
+
+static const mrpc::CppType kPbCppTypeToMrpcCppType[google::protobuf::FieldDescriptor::MAX_CPPTYPE + 1] =
 {
     mrpc::CPPTYPE_UNKNOWN,
     mrpc::CPPTYPE_INT32,
@@ -20,67 +26,56 @@ mrpc::CppType const CppField::kPbCppTypeToMrpcCppType[google::protobuf::FieldDes
     mrpc::CPPTYPE_BOOL,
     mrpc::CPPTYPE_ENUM,
     mrpc::CPPTYPE_STRING,
-    mrpc::CPPTYPE_MESSAGE,
+    mrpc::CPPTYPE_MESSAGE
 };
 
-const std::string_view CppField::kCppTypeToEnumName[mrpc::CppType_ARRAYSIZE] =
+static const std::map<mrpc::CppType, std::string_view> kCppTypeToEnumName = 
 {
-    "mrpc::CPPTYPE_UNKNOWN",
-    "mrpc::CPPTYPE_INT32",
-    "mrpc::CPPTYPE_UINT32",
-    "mrpc::CPPTYPE_INT64",
-    "mrpc::CPPTYPE_UINT64",
-    "mrpc::CPPTYPE_FLOAT",
-    "mrpc::CPPTYPE_DOUBLE",
-    "mrpc::CPPTYPE_BOOL",
-    "mrpc::CPPTYPE_ENUM",
-    "mrpc::CPPTYPE_STRING",
-    "mrpc::CPPTYPE_MESSAGE",
-    "mrpc::CPPTYPE_VECTOR",
-    "mrpc::CPPTYPE_LIST",
-    "mrpc::CPPTYPE_MAP",
-    "mrpc::CPPTYPE_UNORDERED_MAP",
+    { mrpc::CPPTYPE_INT32, "mrpc::CPPTYPE_INT32" },
+    { mrpc::CPPTYPE_UINT32, "mrpc::CPPTYPE_UINT32" },
+    { mrpc::CPPTYPE_INT64, "mrpc::CPPTYPE_INT64" },
+    { mrpc::CPPTYPE_UINT64, "mrpc::CPPTYPE_UINT64" },
+    { mrpc::CPPTYPE_FLOAT, "mrpc::CPPTYPE_FLOAT" },
+    { mrpc::CPPTYPE_DOUBLE, "mrpc::CPPTYPE_DOUBLE" },
+    { mrpc::CPPTYPE_BOOL, "mrpc::CPPTYPE_BOOL" },
+    { mrpc::CPPTYPE_ENUM, "mrpc::CPPTYPE_ENUM" },
+    { mrpc::CPPTYPE_STRING, "mrpc::CPPTYPE_STRING" },
+    { mrpc::CPPTYPE_MESSAGE, "mrpc::CPPTYPE_MESSAGE" },
+    { mrpc::CPPTYPE_VECTOR, "mrpc::CPPTYPE_VECTOR" },
+    { mrpc::CPPTYPE_LIST, "mrpc::CPPTYPE_LIST" },
+    { mrpc::CPPTYPE_MAP, "mrpc::CPPTYPE_MAP" },
+    { mrpc::CPPTYPE_UNORDERED_MAP, "mrpc::CPPTYPE_UNORDERED_MAP" }
 };
 
-const std::string_view CppField::kCppTypeToName[mrpc::CppType_ARRAYSIZE] =
+static const std::map<mrpc::CppType, std::string_view> kCppTypeToName =
 {
-    "unknown",
-    "int32_t",
-    "uint32_t",
-    "int64_t",
-    "uint64_t",
-    "float",
-    "double",
-    "bool",
-    "int32_t",
-    "std::string",
-    "class",
-    "std::vector",
-    "std::list",
-    "std::map",
-    "std::unordered_map",
+    { mrpc::CPPTYPE_INT32, "int32_t" },
+    { mrpc::CPPTYPE_UINT32, "uint32_t" },
+    { mrpc::CPPTYPE_INT64, "int64_t" },
+    { mrpc::CPPTYPE_UINT64, "uint64_t" },
+    { mrpc::CPPTYPE_FLOAT, "float" },
+    { mrpc::CPPTYPE_DOUBLE, "double" },
+    { mrpc::CPPTYPE_BOOL, "bool" },
+    { mrpc::CPPTYPE_ENUM, "int32_t" },
+    { mrpc::CPPTYPE_STRING, "std::string" },
+    { mrpc::CPPTYPE_VECTOR, "std::vector" },
+    { mrpc::CPPTYPE_LIST, "std::list" },
+    { mrpc::CPPTYPE_MAP, "std::map" },
+    { mrpc::CPPTYPE_UNORDERED_MAP, "std::unordered_map" }
 };
 
-const std::string_view CppField::kCppTypeDefault[mrpc::CppType_ARRAYSIZE] =
+static const std::map<mrpc::CppType, std::string_view> kCppTypeDefault =
 {
-    "",
-    "0",
-    "0",
-    "0l",
-    "0ul",
-    "0.0f",
-    "0.0",
-    "false",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
+    { mrpc::CPPTYPE_INT32, "0" },
+    { mrpc::CPPTYPE_UINT32, "0" },
+    { mrpc::CPPTYPE_INT64, "0l" },
+    { mrpc::CPPTYPE_UINT64, "0ul" },
+    { mrpc::CPPTYPE_FLOAT, "0.0f" },
+    { mrpc::CPPTYPE_DOUBLE, "0.0" },
+    { mrpc::CPPTYPE_BOOL, "false" }
 };
 
-const std::map<int, std::string_view> CppField::kPbTypeToTemplateType =
+static const std::map<int, std::string_view> kPbTypeToTemplateType =
 {
     { google::protobuf::FieldDescriptor::TYPE_DOUBLE, "mrpc::TYPE_DOUBLE" },
     { google::protobuf::FieldDescriptor::TYPE_FLOAT, "mrpc::TYPE_FLOAT" },
@@ -99,6 +94,37 @@ const std::map<int, std::string_view> CppField::kPbTypeToTemplateType =
     { google::protobuf::FieldDescriptor::TYPE_SINT32, "mrpc::TYPE_ZIGZAG_INT32" },
     { google::protobuf::FieldDescriptor::TYPE_SINT64, "mrpc::TYPE_ZIGZAG_INT64" },
 };
+
+static std::string_view CppTypeToEnumName(mrpc::CppType cpp_type)
+{
+    auto it = kCppTypeToEnumName.find(cpp_type);
+    if (it != kCppTypeToEnumName.end())
+    {
+        return it->second;
+    }
+    return "";
+}
+
+static std::string_view CppTypeToName(mrpc::CppType cpp_type)
+{
+    auto it = kCppTypeToName.find(cpp_type);
+    if (it != kCppTypeToName.end())
+    {
+        return it->second;
+    }
+    return "";
+}
+
+static std::string_view CppTypeDefault(mrpc::CppType cpp_type)
+{
+    auto it = kCppTypeDefault.find(cpp_type);
+    if (it != kCppTypeDefault.end())
+    {
+        return it->second;
+    }
+    return "";
+}
+
 
 CppField::CppField(const std::string& field_name) : field_name_(field_name)
 {
@@ -160,7 +186,7 @@ bool CppField::Parse(const google::protobuf::FieldDescriptor* desc, std::string*
         }
     }
 
-    // vector
+    // repeated 
     if (!desc->is_map() && desc->is_repeated())
     {
         proto_sub_type_1_ = proto_type_;
@@ -177,12 +203,12 @@ bool CppField::Parse(const google::protobuf::FieldDescriptor* desc, std::string*
             return false;
         }
 
-        mrpc::CppType real_cpp_type = desc->options().GetExtension(mrpc::cpp_type);
+        mrpc::CppType real_cpp_type = (mrpc::CppType)desc->options().GetExtension(mrpc::cpp_type);
         if (IsSequenceContainerType(cpp_type_))
         {
             if (!IsSequenceContainerType(real_cpp_type))
             {
-                *error = desc->full_name() + ": repeated fields can only set `mrpc.cpp_type` to `CPPTYPE_LIST`";
+                *error = desc->full_name() + ": repeated fields can only set `mrpc.cpp_type` to `vector` or `list`";
                 return false;
             }
         }
@@ -190,7 +216,7 @@ bool CppField::Parse(const google::protobuf::FieldDescriptor* desc, std::string*
         {
             if (!IsAssociativeContainerType(real_cpp_type))
             {
-                *error = desc->full_name() + ": maps can only set `mrpc.cpp_type` to `CPPTYPE_UNORDERED_MAP`";
+                *error = desc->full_name() + ": maps can only set `mrpc.cpp_type` to `map` or `unordered_map`";
                 return false;
             }
         }
@@ -200,7 +226,7 @@ bool CppField::Parse(const google::protobuf::FieldDescriptor* desc, std::string*
 
     if (cpp_type_ == mrpc::CPPTYPE_VECTOR && cpp_sub_type_1_ == mrpc::CPPTYPE_BOOL)
     {
-        *error = desc->full_name() + ": repeated bool fields must not set `mrpc.cpp_type` to `CPPTYPE_VECTOR`";
+        *error = desc->full_name() + ": repeated bool fields must not set `mrpc.cpp_type` to `vector`";
         return false;
     }
 
@@ -263,16 +289,16 @@ void CppField::OutputFieldDefinition(google::protobuf::io::Printer& printer,
 {
     // field
     vars["field_name"] = field_name_;
-    vars["field_type"] = kCppTypeToName[cpp_type_];
-    vars["field_sub_type_1"] = kCppTypeToName[cpp_sub_type_1_];
-    vars["field_sub_type_2"] = kCppTypeToName[cpp_sub_type_2_];
+    vars["field_type"] = CppTypeToName(cpp_type_);
+    vars["field_sub_type_1"] = CppTypeToName(cpp_sub_type_1_);
+    vars["field_sub_type_2"] = CppTypeToName(cpp_sub_type_2_);
     if (!field_default_.empty())
     {
         vars["field_default"] = field_default_;
     }
     else
     {
-        vars["field_default"] = kCppTypeDefault[cpp_type_];
+        vars["field_default"] = CppTypeDefault(cpp_type_);
     }
     switch (cpp_type_)
     {
@@ -334,7 +360,7 @@ void CppField::OutputFieldCacheSize(google::protobuf::io::Printer& printer,
 
     // field
     vars["field_name"] = field_name_;
-    printer.Print(vars, "    uint32_t $field_name$_cached_size_ = 0;\n");
+    printer.Print(vars, "    mutable uint32_t $field_name$_cached_size_ = 0;\n");
 }
 
 void CppField::OutputClearMethod(google::protobuf::io::Printer& printer,
@@ -347,7 +373,7 @@ void CppField::OutputClearMethod(google::protobuf::io::Printer& printer,
     }
     else
     {
-        vars["field_default"] = kCppTypeDefault[cpp_type_];
+        vars["field_default"] = CppTypeDefault(cpp_type_);
     }
     switch (cpp_type_)
     {
@@ -399,14 +425,14 @@ void CppField::OutputByteSizeSkipDefaultMethod(google::protobuf::io::Printer& pr
     }
     else
     {
-        vars["field_default"] = kCppTypeDefault[cpp_type_];
+        vars["field_default"] = CppTypeDefault(cpp_type_);
     }
 
     if (!IsContainerType(cpp_type_))
     {
         if (cpp_type_ == mrpc::CPPTYPE_MESSAGE)
         {
-            printer.Print(vars, "    size += mrpc::CalcByteSizeWithTag<$skip_default$>($tag_number$, $field_name$);\n");
+            printer.Print(vars, "    size += mrpc::CalcByteSizeWithTag<$skip_default$>($tag_number$, this->$field_name$);\n");
         }
         else
         {
@@ -429,26 +455,26 @@ void CppField::OutputByteSizeSkipDefaultMethod(google::protobuf::io::Printer& pr
                 case mrpc::CPPTYPE_FLOAT:
                 case mrpc::CPPTYPE_DOUBLE:
                 case mrpc::CPPTYPE_ENUM:
-                    printer.Print(vars, "    if ($field_name$ != $field_default$) size += mrpc::CalcByteSizeWithTag<$template_type$>($tag_number$, $field_name$);\n");
+                    printer.Print(vars, "    if (this->$field_name$ != $field_default$) size += mrpc::CalcByteSizeWithTag<$template_type$>($tag_number$, this->$field_name$);\n");
                     break;
                 case mrpc::CPPTYPE_BOOL:
                     if (vars["field_default"] == "false")
                     {
-                        printer.Print(vars, "    if ($field_name$) size += mrpc::CalcByteSizeWithTag<$template_type$>($tag_number$, $field_name$);\n");
+                        printer.Print(vars, "    if (this->$field_name$) size += mrpc::CalcByteSizeWithTag<$template_type$>($tag_number$, this->$field_name$);\n");
                     }
                     else
                     {
-                        printer.Print(vars, "    if (!$field_name$) size += mrpc::CalcByteSizeWithTag<$template_type$>($tag_number$, $field_name$);\n");
+                        printer.Print(vars, "    if (!this->$field_name$) size += mrpc::CalcByteSizeWithTag<$template_type$>($tag_number$, this->$field_name$);\n");
                     }
                     break;
                 case mrpc::CPPTYPE_STRING:
                     if (!vars["field_default"].empty())
                     {
-                        printer.Print(vars, "    if ($field_name$ != \"$field_default$\") size += mrpc::CalcByteSizeWithTag<$template_type$>($tag_number$, $field_name$);\n");
+                        printer.Print(vars, "    if (this->$field_name$ != \"$field_default$\") size += mrpc::CalcByteSizeWithTag<$template_type$>($tag_number$, this->$field_name$);\n");
                     }
                     else
                     {
-                        printer.Print(vars, "    if (!$field_name$.empty()) size += mrpc::CalcByteSizeWithTag<$template_type$>($tag_number$, $field_name$);\n");
+                        printer.Print(vars, "    if (!this->$field_name$.empty()) size += mrpc::CalcByteSizeWithTag<$template_type$>($tag_number$, this->$field_name$);\n");
                     }
                     break;
                 default:
@@ -458,23 +484,13 @@ void CppField::OutputByteSizeSkipDefaultMethod(google::protobuf::io::Printer& pr
     }
     else if (IsSequenceContainerType(cpp_type_))
     {
-        if (cpp_type_ == mrpc::CPPTYPE_VECTOR)
-        {
-            vars["container_function_type"] = "Vector";
-        }
-        else if (cpp_type_ == mrpc::CPPTYPE_LIST)
-        {
-            vars["container_function_type"] = "List";
-        }
-
         if (cpp_sub_type_1_ == mrpc::CPPTYPE_STRING)
         {
-            printer.Print(vars, "    size += mrpc::Calc$container_function_type$ByteSizeWithTag($tag_number$, $field_name$);\n");
+            printer.Print(vars, "    size += mrpc::CalcRepeatedByteSizeWithTag($tag_number$, this->$field_name$);\n");
         }
         else if (cpp_sub_type_1_ == mrpc::CPPTYPE_MESSAGE)
         {
-            vars["template_type"] = field_type_name_;
-            printer.Print(vars, "    size += mrpc::Calc$container_function_type$ByteSizeWithTag<$template_type$, $skip_default$>($tag_number$, $field_name$);\n");
+            printer.Print(vars, "    size += mrpc::CalcRepeatedByteSizeWithTag<$skip_default$>($tag_number$, this->$field_name$);\n");
         }
         else
         {
@@ -488,34 +504,24 @@ void CppField::OutputByteSizeSkipDefaultMethod(google::protobuf::io::Printer& pr
                 assert(false && "unknown type");
             }
 
-            printer.Print(vars, "    size += mrpc::Calc$container_function_type$ByteSizeWithTag<$template_type$>($tag_number$, $field_name$, $field_name$_cached_size_);\n");
+            printer.Print(vars, "    size += mrpc::CalcRepeatedByteSizeWithTag<$template_type$>($tag_number$, this->$field_name$, $field_name$_cached_size_);\n");
         }
     }
     else if (IsAssociativeContainerType(cpp_type_))
     {
-        if (cpp_type_ == mrpc::CPPTYPE_MAP)
-        {
-            vars["container_function_type"] = "Map";
-        }
-        else if (cpp_type_ == mrpc::CPPTYPE_UNORDERED_MAP)
-        {
-            vars["container_function_type"] = "UnorderedMap";
-        }
-
         if (cpp_sub_type_2_ == mrpc::CPPTYPE_MESSAGE)
         {
             auto it_key = kPbTypeToTemplateType.find(proto_sub_type_1_);
             if (it_key != kPbTypeToTemplateType.end())
             {
                 vars["template_type_key"] = it_key->second;
-                vars["template_type_value"] = field_type_name_;
             }
             else
             {
                 assert(false && "unknown type");
             }
 
-            printer.Print(vars, "    size += mrpc::Calc$container_function_type$ByteSizeWithTag<$template_type_key$, $template_type_value$, $skip_default$>($tag_number$, $field_name$);\n");
+            printer.Print(vars, "    size += mrpc::CalcMapByteSizeWithTag<$template_type_key$, $skip_default$>($tag_number$, this->$field_name$);\n");
         }
         else
         {
@@ -531,7 +537,7 @@ void CppField::OutputByteSizeSkipDefaultMethod(google::protobuf::io::Printer& pr
                 assert(false && "unknown type");
             }
 
-            printer.Print(vars, "    size += mrpc::Calc$container_function_type$ByteSizeWithTag<$template_type_key$, $template_type_value$>($tag_number$, $field_name$);\n");
+            printer.Print(vars, "    size += mrpc::CalcMapByteSizeWithTag<$template_type_key$, $template_type_value$>($tag_number$, this->$field_name$);\n");
         }
     }
 }
@@ -547,7 +553,7 @@ void CppField::OutputByteSizeNotSkipDefaultMethod(google::protobuf::io::Printer&
     {
         if (cpp_type_ == mrpc::CPPTYPE_MESSAGE)
         {
-            printer.Print(vars, "    size += mrpc::CalcByteSizeWithTag<$skip_default$>($tag_number$, $field_name$);\n");
+            printer.Print(vars, "    size += mrpc::CalcByteSizeWithTag<$skip_default$>($tag_number$, this->$field_name$);\n");
         }
         else
         {
@@ -561,29 +567,19 @@ void CppField::OutputByteSizeNotSkipDefaultMethod(google::protobuf::io::Printer&
                 assert(false && "unknown type");
             }
 
-            printer.Print(vars, "    size += mrpc::CalcByteSizeWithTag<$template_type$>($tag_number$, $field_name$);\n");
+            printer.Print(vars, "    size += mrpc::CalcByteSizeWithTag<$template_type$>($tag_number$, this->$field_name$);\n");
         }
 
     }
     else if (IsSequenceContainerType(cpp_type_))
     {
-        if (cpp_type_ == mrpc::CPPTYPE_VECTOR)
-        {
-            vars["container_function_type"] = "Vector";
-        }
-        else if (cpp_type_ == mrpc::CPPTYPE_LIST)
-        {
-            vars["container_function_type"] = "List";
-        }
-
         if (cpp_sub_type_1_ == mrpc::CPPTYPE_STRING)
         {
-            printer.Print(vars, "    size += mrpc::Calc$container_function_type$ByteSizeWithTag($tag_number$, $field_name$);\n");
+            printer.Print(vars, "    size += mrpc::CalcRepeatedByteSizeWithTag($tag_number$, this->$field_name$);\n");
         }
         else if (cpp_sub_type_1_ == mrpc::CPPTYPE_MESSAGE)
         {
-            vars["template_type"] = field_type_name_;
-            printer.Print(vars, "    size += mrpc::Calc$container_function_type$ByteSizeWithTag<$template_type$, $skip_default$>($tag_number$, $field_name$);\n");
+            printer.Print(vars, "    size += mrpc::CalcRepeatedByteSizeWithTag<$skip_default$>($tag_number$, this->$field_name$);\n");
         }
         else
         {
@@ -597,34 +593,24 @@ void CppField::OutputByteSizeNotSkipDefaultMethod(google::protobuf::io::Printer&
                 assert(false && "unknown type");
             }
 
-            printer.Print(vars, "    size += mrpc::Calc$container_function_type$ByteSizeWithTag<$template_type$>($tag_number$, $field_name$, $field_name$_cached_size_);\n");
+            printer.Print(vars, "    size += mrpc::CalcRepeatedByteSizeWithTag<$template_type$>($tag_number$, this->$field_name$, $field_name$_cached_size_);\n");
         }
     }
     else if (IsAssociativeContainerType(cpp_type_))
     {
-        if (cpp_type_ == mrpc::CPPTYPE_MAP)
-        {
-            vars["container_function_type"] = "Map";
-        }
-        else if (cpp_type_ == mrpc::CPPTYPE_UNORDERED_MAP)
-        {
-            vars["container_function_type"] = "UnorderedMap";
-        }
-
         if (cpp_sub_type_2_ == mrpc::CPPTYPE_MESSAGE)
         {
             auto it_key = kPbTypeToTemplateType.find(proto_sub_type_1_);
             if (it_key != kPbTypeToTemplateType.end())
             {
                 vars["template_type_key"] = it_key->second;
-                vars["template_type_value"] = field_type_name_;
             }
             else
             {
                 assert(false && "unknown type");
             }
 
-            printer.Print(vars, "    size += mrpc::Calc$container_function_type$ByteSizeWithTag<$template_type_key$, $template_type_value$, $skip_default$>($tag_number$, $field_name$);\n");
+            printer.Print(vars, "    size += mrpc::CalcMapByteSizeWithTag<$template_type_key$, $skip_default$>($tag_number$, this->$field_name$);\n");
         }
         else
         {
@@ -640,7 +626,7 @@ void CppField::OutputByteSizeNotSkipDefaultMethod(google::protobuf::io::Printer&
                 assert(false && "unknown type");
             }
 
-            printer.Print(vars, "    size += mrpc::Calc$container_function_type$ByteSizeWithTag<$template_type_key$, $template_type_value$>($tag_number$, $field_name$);\n");
+            printer.Print(vars, "    size += mrpc::CalcMapByteSizeWithTag<$template_type_key$, $template_type_value$>($tag_number$, this->$field_name$);\n");
         }
     }
 }
@@ -657,14 +643,14 @@ void CppField::OutputSerializeToStringSkipDefaultMethod(google::protobuf::io::Pr
     }
     else
     {
-        vars["field_default"] = kCppTypeDefault[cpp_type_];
+        vars["field_default"] = CppTypeDefault(cpp_type_);
     }
 
     if (!IsContainerType(cpp_type_))
     {
         if (cpp_type_ == mrpc::CPPTYPE_MESSAGE)
         {
-            printer.Print(vars, "    mrpc::SerializeWithTag<$skip_default$>(s, $tag_number$, $field_name$);\n");
+            printer.Print(vars, "    mrpc::SerializeWithTag<$skip_default$>(s, $tag_number$, this->$field_name$);\n");
         }
         else
         {
@@ -687,26 +673,26 @@ void CppField::OutputSerializeToStringSkipDefaultMethod(google::protobuf::io::Pr
                 case mrpc::CPPTYPE_FLOAT:
                 case mrpc::CPPTYPE_DOUBLE:
                 case mrpc::CPPTYPE_ENUM:
-                    printer.Print(vars, "    if ($field_name$ != $field_default$) mrpc::SerializeWithTag<$template_type$>(s, $tag_number$, $field_name$);\n");
+                    printer.Print(vars, "    if (this->$field_name$ != $field_default$) mrpc::SerializeWithTag<$template_type$>(s, $tag_number$, this->$field_name$);\n");
                     break;
                 case mrpc::CPPTYPE_BOOL:
                     if (vars["field_default"] == "false")
                     {
-                        printer.Print(vars, "    if ($field_name$) mrpc::SerializeWithTag<$template_type$>(s, $tag_number$, $field_name$);\n");
+                        printer.Print(vars, "    if (this->$field_name$) mrpc::SerializeWithTag<$template_type$>(s, $tag_number$, this->$field_name$);\n");
                     }
                     else
                     {
-                        printer.Print(vars, "    if (!$field_name$) mrpc::SerializeWithTag<$template_type$>(s, $tag_number$, $field_name$);\n");
+                        printer.Print(vars, "    if (!this->$field_name$) mrpc::SerializeWithTag<$template_type$>(s, $tag_number$, this->$field_name$);\n");
                     }
                     break;
                 case mrpc::CPPTYPE_STRING:
                     if (!vars["field_default"].empty())
                     {
-                        printer.Print(vars, "    if ($field_name$ != \"$field_default$\") mrpc::SerializeWithTag<$template_type$>(s, $tag_number$, $field_name$);\n");
+                        printer.Print(vars, "    if (this->$field_name$ != \"$field_default$\") mrpc::SerializeWithTag<$template_type$>(s, $tag_number$, this->$field_name$);\n");
                     }
                     else
                     {
-                        printer.Print(vars, "    if (!$field_name$.empty()) mrpc::SerializeWithTag<$template_type$>(s, $tag_number$, $field_name$);\n");
+                        printer.Print(vars, "    if (!this->$field_name$.empty()) mrpc::SerializeWithTag<$template_type$>(s, $tag_number$, this->$field_name$);\n");
                     }
                     break;
                 default:
@@ -717,23 +703,13 @@ void CppField::OutputSerializeToStringSkipDefaultMethod(google::protobuf::io::Pr
     }
     else if (IsSequenceContainerType(cpp_type_))
     {
-        if (cpp_type_ == mrpc::CPPTYPE_VECTOR)
-        {
-            vars["container_function_type"] = "Vector";
-        }
-        else if (cpp_type_ == mrpc::CPPTYPE_LIST)
-        {
-            vars["container_function_type"] = "List";
-        }
-
         if (cpp_sub_type_1_ == mrpc::CPPTYPE_STRING)
         {
-            printer.Print(vars, "    mrpc::Serialize$container_function_type$WithTag(s, $tag_number$, $field_name$);\n");
+            printer.Print(vars, "    mrpc::SerializeRepeatedWithTag(s, $tag_number$, this->$field_name$);\n");
         }
         else if (cpp_sub_type_1_ == mrpc::CPPTYPE_MESSAGE)
         {
-            vars["template_type"] = field_type_name_;
-            printer.Print(vars, "    mrpc::Serialize$container_function_type$WithTag<$template_type$, $skip_default$>(s, $tag_number$, $field_name$);\n");
+            printer.Print(vars, "    mrpc::SerializeRepeatedWithTag<$skip_default$>(s, $tag_number$, this->$field_name$);\n");
         }
         else
         {
@@ -747,34 +723,24 @@ void CppField::OutputSerializeToStringSkipDefaultMethod(google::protobuf::io::Pr
                 assert(false && "unknown type");
             }
 
-            printer.Print(vars, "    mrpc::Serialize$container_function_type$WithTag<$template_type$>(s, $tag_number$, $field_name$, $field_name$_cached_size_);\n");
+            printer.Print(vars, "    mrpc::SerializeRepeatedWithTag<$template_type$>(s, $tag_number$, this->$field_name$, $field_name$_cached_size_);\n");
         }
     }
     else if (IsAssociativeContainerType(cpp_type_))
     {
-        if (cpp_type_ == mrpc::CPPTYPE_MAP)
-        {
-            vars["container_function_type"] = "Map";
-        }
-        else if (cpp_type_ == mrpc::CPPTYPE_UNORDERED_MAP)
-        {
-            vars["container_function_type"] = "UnorderedMap";
-        }
-
         if (cpp_sub_type_2_ == mrpc::CPPTYPE_MESSAGE)
         {
             auto it_key = kPbTypeToTemplateType.find(proto_sub_type_1_);
             if (it_key != kPbTypeToTemplateType.end())
             {
                 vars["template_type_key"] = it_key->second;
-                vars["template_type_value"] = field_type_name_;
             }
             else
             {
                 assert(false && "unknown type");
             }
 
-            printer.Print(vars, "    mrpc::Serialize$container_function_type$WithTag<$template_type_key$, $template_type_value$, $skip_default$>(s, $tag_number$, $field_name$);\n");
+            printer.Print(vars, "    mrpc::SerializeMapWithTag<$template_type_key$, $skip_default$>(s, $tag_number$, this->$field_name$);\n");
         }
         else
         {
@@ -790,7 +756,7 @@ void CppField::OutputSerializeToStringSkipDefaultMethod(google::protobuf::io::Pr
                 assert(false && "unknown type");
             }
 
-            printer.Print(vars, "    mrpc::Serialize$container_function_type$WithTag<$template_type_key$, $template_type_value$>(s, $tag_number$, $field_name$);\n");
+            printer.Print(vars, "    mrpc::SerializeMapWithTag<$template_type_key$, $template_type_value$>(s, $tag_number$, this->$field_name$);\n");
         }
     }
 }
@@ -806,7 +772,7 @@ void CppField::OutputSerializeToStringNotSkipDefaultMethod(google::protobuf::io:
     {
         if (cpp_type_ == mrpc::CPPTYPE_MESSAGE)
         {
-            printer.Print(vars, "    mrpc::SerializeWithTag<$skip_default$>(s, $tag_number$, $field_name$);\n");
+            printer.Print(vars, "    mrpc::SerializeWithTag<$skip_default$>(s, $tag_number$, this->$field_name$);\n");
         }
         else
         {
@@ -820,28 +786,18 @@ void CppField::OutputSerializeToStringNotSkipDefaultMethod(google::protobuf::io:
                 assert(false && "unknown type");
             }
 
-            printer.Print(vars, "    mrpc::SerializeWithTag<$template_type$>(s, $tag_number$, $field_name$);\n");
+            printer.Print(vars, "    mrpc::SerializeWithTag<$template_type$>(s, $tag_number$, this->$field_name$);\n");
         }
     }
     else if (IsSequenceContainerType(cpp_type_))
     {
-        if (cpp_type_ == mrpc::CPPTYPE_VECTOR)
-        {
-            vars["container_function_type"] = "Vector";
-        }
-        else if (cpp_type_ == mrpc::CPPTYPE_LIST)
-        {
-            vars["container_function_type"] = "List";
-        }
-
         if (cpp_sub_type_1_ == mrpc::CPPTYPE_STRING)
         {
-            printer.Print(vars, "    mrpc::Serialize$container_function_type$WithTag(s, $tag_number$, $field_name$);\n");
+            printer.Print(vars, "    mrpc::SerializeRepeatedWithTag(s, $tag_number$, this->$field_name$);\n");
         }
         else if (cpp_sub_type_1_ == mrpc::CPPTYPE_MESSAGE)
         {
-            vars["template_type"] = field_type_name_;
-            printer.Print(vars, "    mrpc::Serialize$container_function_type$WithTag<$template_type$, $skip_default$>(s, $tag_number$, $field_name$);\n");
+            printer.Print(vars, "    mrpc::SerializeRepeatedWithTag<$skip_default$>(s, $tag_number$, this->$field_name$);\n");
         }
         else
         {
@@ -855,34 +811,24 @@ void CppField::OutputSerializeToStringNotSkipDefaultMethod(google::protobuf::io:
                 assert(false && "unknown type");
             }
 
-            printer.Print(vars, "    mrpc::Serialize$container_function_type$WithTag<$template_type$>(s, $tag_number$, $field_name$, $field_name$_cached_size_);\n");
+            printer.Print(vars, "    mrpc::SerializeRepeatedWithTag<$template_type$>(s, $tag_number$, this->$field_name$, $field_name$_cached_size_);\n");
         }
     }
     else if (IsAssociativeContainerType(cpp_type_))
     {
-        if (cpp_type_ == mrpc::CPPTYPE_MAP)
-        {
-            vars["container_function_type"] = "Map";
-        }
-        else if (cpp_type_ == mrpc::CPPTYPE_UNORDERED_MAP)
-        {
-            vars["container_function_type"] = "UnorderedMap";
-        }
-
         if (cpp_sub_type_2_ == mrpc::CPPTYPE_MESSAGE)
         {
             auto it_key = kPbTypeToTemplateType.find(proto_sub_type_1_);
             if (it_key != kPbTypeToTemplateType.end())
             {
                 vars["template_type_key"] = it_key->second;
-                vars["template_type_value"] = field_type_name_;
             }
             else
             {
                 assert(false && "unknown type");
             }
 
-            printer.Print(vars, "    mrpc::Serialize$container_function_type$WithTag<$template_type_key$, $template_type_value$, $skip_default$>(s, $tag_number$, $field_name$);\n");
+            printer.Print(vars, "    mrpc::SerializeMapWithTag<$template_type_key$, $skip_default$>(s, $tag_number$, this->$field_name$);\n");
         }
         else
         {
@@ -898,7 +844,7 @@ void CppField::OutputSerializeToStringNotSkipDefaultMethod(google::protobuf::io:
                 assert(false && "unknown type");
             }
 
-            printer.Print(vars, "    mrpc::Serialize$container_function_type$WithTag<$template_type_key$, $template_type_value$>(s, $tag_number$, $field_name$);\n");
+            printer.Print(vars, "    mrpc::SerializeMapWithTag<$template_type_key$, $template_type_value$>(s, $tag_number$, this->$field_name$);\n");
         }
     }
 }
@@ -913,7 +859,7 @@ void CppField::OutputParseFromBytesMethod(google::protobuf::io::Printer& printer
         if (cpp_type_ == mrpc::CPPTYPE_MESSAGE)
         {
             printer.Print(vars,
-                    "            case $tag_number$: if (!mrpc::ParseCheckType(type, $field_name$, begin, end)) return false;\n"
+                    "            case $tag_number$: if (!mrpc::ParseCheckType(type, this->$field_name$, begin, end)) return false;\n"
                     "                break;\n");
         }
         /*
@@ -936,7 +882,7 @@ void CppField::OutputParseFromBytesMethod(google::protobuf::io::Printer& printer
                     "                int $field_name$_enum_value = 0;\n"
                     "                if (!mrpc::ParseCheckType<$template_type$>(type, $field_name$_enum_value, begin, end)) return false;\n"
                     "                if (!$field_type$_IsValid($field_name$_enum_value)) return false;\n"
-                    "                $field_name$ = static_cast<$field_type$>($field_name$_enum_value);\n"
+                    "                this->$field_name$ = static_cast<$field_type$>($field_name$_enum_value);\n"
                     "                break;\n"
                     "            }\n");
         }
@@ -954,54 +900,24 @@ void CppField::OutputParseFromBytesMethod(google::protobuf::io::Printer& printer
             }
 
             printer.Print(vars,
-                    "            case $tag_number$: if (!mrpc::ParseCheckType<$template_type$>(type, $field_name$, begin, end)) return false;\n"
+                    "            case $tag_number$: if (!mrpc::ParseCheckType<$template_type$>(type, this->$field_name$, begin, end)) return false;\n"
                     "                break;\n");
         }
     }
     else if (IsSequenceContainerType(cpp_type_))
     {
-        if (cpp_type_ == mrpc::CPPTYPE_VECTOR)
+        if (cpp_sub_type_1_ == mrpc::CPPTYPE_STRING)
         {
-            vars["container_function_type"] = "Vector";
-        }
-        else if (cpp_type_ == mrpc::CPPTYPE_LIST)
-        {
-            vars["container_function_type"] = "List";
-        }
-
-        if (cpp_sub_type_1_ == mrpc::CPPTYPE_MESSAGE)
-        {
-            vars["template_type"] = field_type_name_;
             printer.Print(vars,
-                    "            case $tag_number$: if (!mrpc::Parse$container_function_type$CheckType<$template_type$>(type, $field_name$, begin, end)) return false;\n"
+                    "            case $tag_number$: if (!mrpc::ParseRepeatedCheckType(type, this->$field_name$, begin, end)) return false;\n"
                     "                break;\n");
         }
-        /*
-        else if (cpp_sub_type_1_ == mrpc::CPPTYPE_ENUM)
+        else if (cpp_sub_type_1_ == mrpc::CPPTYPE_MESSAGE)
         {
-            auto it = kPbTypeToTemplateType.find(proto_sub_type_1_);
-            if (it != kPbTypeToTemplateType.end())
-            {
-                vars["template_type"] = it->second;
-            }
-            else
-            {
-                assert(false && "unknown type");
-            }
-
-            vars["field_sub_type_1"] = field_type_name_;
             printer.Print(vars,
-                    "            case $tag_number$:\n"
-                    "            {\n"
-                    "                if (!mrpc::Parse$container_function_type$CheckType<$template_type$>(type, $field_name$, begin, end)) return false;\n"
-                    "                for (auto $field_name$_enum_value : $field_name$)\n"
-                    "                {\n"
-                    "                    if (!$field_sub_type_1$_IsValid($field_name$_enum_value)) return false;\n"
-                    "                }\n"
-                    "                break;\n"
-                    "            }\n");
+                    "            case $tag_number$: if (!mrpc::ParseRepeatedCheckType(type, this->$field_name$, begin, end)) return false;\n"
+                    "                break;\n");
         }
-        */
         else
         {
             auto it = kPbTypeToTemplateType.find(proto_sub_type_1_);
@@ -1015,28 +931,18 @@ void CppField::OutputParseFromBytesMethod(google::protobuf::io::Printer& printer
             }
 
             printer.Print(vars,
-                    "            case $tag_number$: if (!mrpc::Parse$container_function_type$CheckType<$template_type$>(type, $field_name$, begin, end)) return false;\n"
+                    "            case $tag_number$: if (!mrpc::ParseRepeatedCheckType<$template_type$>(type, this->$field_name$, begin, end)) return false;\n"
                     "                break;\n");
         }
     }
     else if (IsAssociativeContainerType(cpp_type_))
     {
-        if (cpp_type_ == mrpc::CPPTYPE_MAP)
-        {
-            vars["container_function_type"] = "Map";
-        }
-        else if (cpp_type_ == mrpc::CPPTYPE_UNORDERED_MAP)
-        {
-            vars["container_function_type"] = "UnorderedMap";
-        }
-
         if (cpp_sub_type_2_ == mrpc::CPPTYPE_MESSAGE)
         {
             auto it_key = kPbTypeToTemplateType.find(proto_sub_type_1_);
             if (it_key != kPbTypeToTemplateType.end())
             {
                 vars["template_type_key"] = it_key->second;
-                vars["template_type_value"] = field_type_name_;
             }
             else
             {
@@ -1044,37 +950,9 @@ void CppField::OutputParseFromBytesMethod(google::protobuf::io::Printer& printer
             }
 
             printer.Print(vars,
-                    "            case $tag_number$: if (!mrpc::Parse$container_function_type$CheckType<$template_type_key$, $template_type_value$>(type, $field_name$, begin, end)) return false;\n"
+                    "            case $tag_number$: if (!mrpc::ParseMapCheckType<$template_type_key$>(type, this->$field_name$, begin, end)) return false;\n"
                     "                break;\n");
         }
-        /*
-        else if (cpp_sub_type_2_ == mrpc::CPPTYPE_ENUM)
-        {
-            auto it_key = kPbTypeToTemplateType.find(proto_sub_type_1_);
-            auto it_value = kPbTypeToTemplateType.find(proto_sub_type_2_);
-            if (it_key != kPbTypeToTemplateType.end() && it_value != kPbTypeToTemplateType.end())
-            {
-                vars["template_type_key"] = it_key->second;
-                vars["template_type_value"] = it_value->second;
-            }
-            else
-            {
-                assert(false && "unknown type");
-            }
-
-            vars["field_sub_type_2"] = field_type_name_;
-            printer.Print(vars,
-                    "            case $tag_number$:\n"
-                    "            {\n"
-                    "                if (!mrpc::Parse$container_function_type$CheckType<$template_type_key$, $template_type_value$>(type, $field_name$, begin, end)) return false;\n"
-                    "                for (auto& [_, $field_name$_enum_value] : $field_name$)\n"
-                    "                {\n"
-                    "                    if (!$field_sub_type_2$_IsValid($field_name$_enum_value)) return false;\n"
-                    "                }\n"
-                    "                break;\n"
-                    "            }\n");
-        }
-        */
         else
         {
             auto it_key = kPbTypeToTemplateType.find(proto_sub_type_1_);
@@ -1090,7 +968,7 @@ void CppField::OutputParseFromBytesMethod(google::protobuf::io::Printer& printer
             }
 
             printer.Print(vars,
-                    "            case $tag_number$: if (!mrpc::Parse$container_function_type$CheckType<$template_type_key$, $template_type_value$>(type, $field_name$, begin, end)) return false;\n"
+                    "            case $tag_number$: if (!mrpc::ParseMapCheckType<$template_type_key$, $template_type_value$>(type, this->$field_name$, begin, end)) return false;\n"
                     "                break;\n");
         }
     }
@@ -1101,12 +979,12 @@ void CppField::OutputDescriptorWrapperMember(google::protobuf::io::Printer& prin
 {
     vars["field_name"] = field_name_;
     vars["field_name_length"] = std::to_string(field_name_.length());
-    vars["cpp_type_name"] = kCppTypeToEnumName[cpp_type_];
+    vars["cpp_type_name"] = CppTypeToEnumName(cpp_type_);
 
     if (IsSequenceContainerType(cpp_type_))
     {
-        vars["field_sub_type_1"] = kCppTypeToEnumName[cpp_sub_type_1_];
-        vars["container_sub_type_1"] = kCppTypeToName[cpp_sub_type_1_];
+        vars["field_sub_type_1"] = CppTypeToEnumName(cpp_sub_type_1_);
+        vars["container_sub_type_1"] = CppTypeToName(cpp_sub_type_1_);
 
         if (cpp_type_ == mrpc::CPPTYPE_VECTOR)
         {
@@ -1134,10 +1012,10 @@ void CppField::OutputDescriptorWrapperMember(google::protobuf::io::Printer& prin
     }
     else if (IsAssociativeContainerType(cpp_type_))
     {
-        vars["field_sub_type_1"] = kCppTypeToEnumName[cpp_sub_type_1_];
-        vars["field_sub_type_2"] = kCppTypeToEnumName[cpp_sub_type_2_];
-        vars["container_sub_type_1"] = kCppTypeToName[cpp_sub_type_1_];
-        vars["container_sub_type_2"] = kCppTypeToName[cpp_sub_type_2_];
+        vars["field_sub_type_1"] = CppTypeToEnumName(cpp_sub_type_1_);
+        vars["field_sub_type_2"] = CppTypeToEnumName(cpp_sub_type_2_);
+        vars["container_sub_type_1"] = CppTypeToName(cpp_sub_type_1_);
+        vars["container_sub_type_2"] = CppTypeToName(cpp_sub_type_2_);
 
         if (cpp_type_ == mrpc::CPPTYPE_MAP)
         {
@@ -1187,7 +1065,7 @@ void CppField::OutputDescriptorInitializerList(google::protobuf::io::Printer& pr
 {
     vars["field_name"] = field_name_;
     vars["field_name_length"] = std::to_string(field_name_.length());
-    vars["cpp_type_name"] = kCppTypeToEnumName[cpp_type_];
+    vars["cpp_type_name"] = CppTypeToEnumName(cpp_type_);
 
     printer.Print(vars, "        &$field_name$_field_desc,\n");
 }

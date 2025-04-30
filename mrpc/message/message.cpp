@@ -3,21 +3,7 @@
 namespace mrpc
 {
 
-Message* Message::New() const
-{
-    return nullptr;
-}
-
-void Message::CopyFrom(const Message& /*msg*/)
-{
-}
-
-const Descriptor* Message::GetDescriptor() const
-{
-    return nullptr;
-}
-
-void Message::SerializeToString(std::string& s, bool skip_default /*= true*/)
+void Message::SerializeToString(std::string& s, bool skip_default /*= true*/) const
 {
     size_t size = ByteSize(skip_default);
     s.clear();

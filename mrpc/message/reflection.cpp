@@ -67,7 +67,7 @@ Message& Reflection::GetMessage(Message& msg, const FieldDescriptor& desc)
 
 RepeatedFieldDescriptor::Iterator* Reflection::RepeatedNewIterator(const Message& msg, const FieldDescriptor& desc)
 {
-    assert(desc.GetCppType() == CPPTYPE_VECTOR || desc.GetCppType() == CPPTYPE_LIST);
+    assert(IsRepeatedCppType(desc.GetCppType()));
     const RepeatedFieldDescriptor* field_desc = dynamic_cast<const RepeatedFieldDescriptor*>(&desc);
     assert(field_desc != nullptr);
     return field_desc->NewIterator(msg);
@@ -75,7 +75,7 @@ RepeatedFieldDescriptor::Iterator* Reflection::RepeatedNewIterator(const Message
 
 int32_t Reflection::RepeatedGetEnum(const FieldDescriptor& desc, RepeatedFieldDescriptor::Iterator& it)
 {
-    assert(desc.GetCppType() == CPPTYPE_VECTOR || desc.GetCppType() == CPPTYPE_LIST);
+    assert(IsRepeatedCppType(desc.GetCppType()));
     const RepeatedFieldDescriptor* field_desc = dynamic_cast<const RepeatedFieldDescriptor*>(&desc);
     (void)field_desc;
     assert(field_desc != nullptr);
@@ -85,7 +85,7 @@ int32_t Reflection::RepeatedGetEnum(const FieldDescriptor& desc, RepeatedFieldDe
 
 bool Reflection::RepeatedAddEnum(Message& msg, const FieldDescriptor& desc, int32_t value)
 {
-    assert(desc.GetCppType() == CPPTYPE_VECTOR || desc.GetCppType() == CPPTYPE_LIST);
+    assert(IsRepeatedCppType(desc.GetCppType()));
     const RepeatedFieldDescriptor* field_desc = dynamic_cast<const RepeatedFieldDescriptor*>(&desc);
     assert(field_desc != nullptr);
     assert(field_desc->GetValueCppType() == CPPTYPE_ENUM);
@@ -102,7 +102,7 @@ bool Reflection::RepeatedAddEnum(Message& msg, const FieldDescriptor& desc, int3
 
 std::string_view Reflection::RepeatedGetEnumName(const FieldDescriptor& desc, RepeatedFieldDescriptor::Iterator& it)
 {
-    assert(desc.GetCppType() == CPPTYPE_VECTOR || desc.GetCppType() == CPPTYPE_LIST);
+    assert(IsRepeatedCppType(desc.GetCppType()));
     const RepeatedFieldDescriptor* field_desc = dynamic_cast<const RepeatedFieldDescriptor*>(&desc);
     assert(field_desc != nullptr);
     assert(field_desc->GetValueCppType() == CPPTYPE_ENUM);
@@ -113,7 +113,7 @@ std::string_view Reflection::RepeatedGetEnumName(const FieldDescriptor& desc, Re
 
 bool Reflection::RepeatedAddEnumName(Message& msg, const FieldDescriptor& desc, std::string_view name)
 {
-    assert(desc.GetCppType() == CPPTYPE_VECTOR || desc.GetCppType() == CPPTYPE_LIST);
+    assert(IsRepeatedCppType(desc.GetCppType()));
     const RepeatedFieldDescriptor* field_desc = dynamic_cast<const RepeatedFieldDescriptor*>(&desc);
     assert(field_desc != nullptr);
     assert(field_desc->GetValueCppType() == CPPTYPE_ENUM);
@@ -131,7 +131,7 @@ bool Reflection::RepeatedAddEnumName(Message& msg, const FieldDescriptor& desc, 
 
 const Message& Reflection::RepeatedGetMessage(const FieldDescriptor& desc, RepeatedFieldDescriptor::Iterator& it)
 {
-    assert(desc.GetCppType() == CPPTYPE_VECTOR || desc.GetCppType() == CPPTYPE_LIST);
+    assert(IsRepeatedCppType(desc.GetCppType()));
     const RepeatedFieldDescriptor* field_desc = dynamic_cast<const RepeatedFieldDescriptor*>(&desc);
     (void)field_desc;
     assert(field_desc != nullptr);
@@ -141,7 +141,7 @@ const Message& Reflection::RepeatedGetMessage(const FieldDescriptor& desc, Repea
 
 Message& Reflection::RepeatedAddMessage(Message& msg, const FieldDescriptor& desc)
 {
-    assert(desc.GetCppType() == CPPTYPE_VECTOR || desc.GetCppType() == CPPTYPE_LIST);
+    assert(IsRepeatedCppType(desc.GetCppType()));
     const RepeatedFieldDescriptor* field_desc = dynamic_cast<const RepeatedFieldDescriptor*>(&desc);
     assert(field_desc != nullptr);
     assert(field_desc->GetValueCppType() == CPPTYPE_MESSAGE);
@@ -150,7 +150,7 @@ Message& Reflection::RepeatedAddMessage(Message& msg, const FieldDescriptor& des
 
 MapFieldDescriptor::Iterator* Reflection::MapNewIterator(const Message& msg, const FieldDescriptor& desc)
 {
-    assert(desc.GetCppType() == CPPTYPE_MAP || desc.GetCppType() == CPPTYPE_UNORDERED_MAP);
+    assert(IsMapCppType(desc.GetCppType()));
     const MapFieldDescriptor* field_desc = dynamic_cast<const MapFieldDescriptor*>(&desc);
     assert(field_desc != nullptr);
     return field_desc->NewIterator(msg);
@@ -158,7 +158,7 @@ MapFieldDescriptor::Iterator* Reflection::MapNewIterator(const Message& msg, con
 
 int32_t Reflection::MapGetEnumValue(const FieldDescriptor& desc, MapFieldDescriptor::Iterator& it)
 {
-    assert(desc.GetCppType() == CPPTYPE_MAP || desc.GetCppType() == CPPTYPE_UNORDERED_MAP);
+    assert(IsMapCppType(desc.GetCppType()));
     const MapFieldDescriptor* field_desc = dynamic_cast<const MapFieldDescriptor*>(&desc);
     (void)field_desc;
     assert(field_desc != nullptr);
@@ -168,7 +168,7 @@ int32_t Reflection::MapGetEnumValue(const FieldDescriptor& desc, MapFieldDescrip
 
 std::string_view Reflection::MapGetEnumValueName(const FieldDescriptor& desc, MapFieldDescriptor::Iterator& it)
 {
-    assert(desc.GetCppType() == CPPTYPE_MAP || desc.GetCppType() == CPPTYPE_UNORDERED_MAP);
+    assert(IsMapCppType(desc.GetCppType()));
     const MapFieldDescriptor* field_desc = dynamic_cast<const MapFieldDescriptor*>(&desc);
     assert(field_desc != nullptr);
     assert(field_desc->GetValueCppType() == CPPTYPE_ENUM);
@@ -179,7 +179,7 @@ std::string_view Reflection::MapGetEnumValueName(const FieldDescriptor& desc, Ma
 
 const Message& Reflection::MapGetMessageValue(const FieldDescriptor& desc, MapFieldDescriptor::Iterator& it)
 {
-    assert(desc.GetCppType() == CPPTYPE_MAP || desc.GetCppType() == CPPTYPE_UNORDERED_MAP);
+    assert(IsMapCppType(desc.GetCppType()));
     const MapFieldDescriptor* field_desc = dynamic_cast<const MapFieldDescriptor*>(&desc);
     (void)field_desc;
     assert(field_desc != nullptr);

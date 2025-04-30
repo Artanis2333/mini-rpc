@@ -6,8 +6,9 @@
 
 #include <mrpc/options.pb.h>
 
-#include "cpp_class.h"
 #include "cpp_enum.h"
+#include "cpp_class.h"
+#include "cpp_service.h"
 
 namespace google::protobuf
 {
@@ -38,8 +39,7 @@ private:
     std::string namespace_;
     std::vector<CppEnum> enums_;
     std::vector<CppClass> classes_;
-    bool gen_cpp_reflection_ = false;
+    std::vector<CppService> service_;
 
-    std::string MakeIncludeMarco() const;
     bool NeedIncludeCppTypeHeader(mrpc::CppType cpp_type) const;
 };

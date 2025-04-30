@@ -29,7 +29,6 @@ public:
     void OutputToSourceFile(google::protobuf::io::Printer& printer,
             std::map<std::string, std::string>& vars) const;
 
-    inline void SetGenCppReflection(bool value) { gen_cpp_reflection_ = value; }
     bool HasCppTypeField(mrpc::CppType cpp_type) const;
 
 private:
@@ -38,5 +37,4 @@ private:
     std::string proto_name_;
     std::string proto_full_name_;
     std::vector<CppField> fields_;
-    bool gen_cpp_reflection_ = false;
 };

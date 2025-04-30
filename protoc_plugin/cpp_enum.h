@@ -27,8 +27,6 @@ public:
     void OutputToSourceFile(google::protobuf::io::Printer& printer,
             std::map<std::string, std::string>& vars) const;
 
-    inline void SetGenCppReflection(bool value) { gen_cpp_reflection_ = value; }
-
 private:
     std::string namespace_;
     std::string enum_name_;
@@ -36,5 +34,4 @@ private:
     std::string proto_full_name_;
     std::vector<std::pair<std::string, int>> name_value_pair_;
     std::map<int, std::string> value2name_;
-    bool gen_cpp_reflection_ = false;
 };

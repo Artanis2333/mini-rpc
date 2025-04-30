@@ -7,7 +7,7 @@
 
 #include <google/protobuf/descriptor.h>
 
-#include <mrpc/options.pb.h>
+#include <mrpc/message/common.pb.h>
 
 namespace google::protobuf
 {
@@ -65,13 +65,6 @@ private:
     mrpc::CppType cpp_sub_type_2_ = mrpc::CPPTYPE_UNKNOWN;
     std::string field_type_name_;
     std::string field_default_;
-
-
-    static mrpc::CppType const kPbCppTypeToMrpcCppType[google::protobuf::FieldDescriptor::MAX_CPPTYPE + 1];
-    static const std::string_view kCppTypeToEnumName[mrpc::CppType_ARRAYSIZE];
-    static const std::string_view kCppTypeToName[mrpc::CppType_ARRAYSIZE];
-    static const std::string_view kCppTypeDefault[mrpc::CppType_ARRAYSIZE];
-    static const std::map<int, std::string_view> kPbTypeToTemplateType;
 
     static bool IsNamedType(mrpc::CppType cpp_type);
     static bool IsContainerType(mrpc::CppType cpp_type);

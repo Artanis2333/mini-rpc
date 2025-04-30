@@ -3,38 +3,21 @@ package mrpc;
 
 import "google/protobuf/descriptor.proto";
 
-option (gen_cpp_reflection) = false;
-
-enum CppType
+enum CppContainerType
 {
-    CPPTYPE_UNKNOWN         = 0;
-    CPPTYPE_INT32           = 1;
-    CPPTYPE_UINT32          = 2;
-    CPPTYPE_INT64           = 3;
-    CPPTYPE_UINT64          = 4;
-    CPPTYPE_FLOAT           = 5;
-    CPPTYPE_DOUBLE          = 6;
-    CPPTYPE_BOOL            = 7;
-    CPPTYPE_ENUM            = 8;
-    CPPTYPE_STRING          = 9;
-    CPPTYPE_MESSAGE         = 10;
-    CPPTYPE_VECTOR          = 11;
-    CPPTYPE_LIST            = 12;
-    CPPTYPE_MAP             = 13;
-    CPPTYPE_UNORDERED_MAP   = 14;
-}
+    vector                  = 101;
+    list                    = 102;
 
-// 仅用于Method
-message Void
-{
-}
-
-extend google.protobuf.FileOptions
-{
-    optional bool gen_cpp_reflection                = 81001 [default = true];
+    map                     = 201;
+    unordered_map           = 202;
 }
 
 /*
+extend google.protobuf.FileOptions
+{
+    optional bool reserved_file_option              = 82001;
+}
+
 extend google.protobuf.EnumOptions
 {
     optional bool reserved_enum_option              = 82001;
@@ -55,7 +38,7 @@ extend google.protobuf.FieldOptions
 {
     // repeated字段可以设成CPPTYPE_LIST
     // map字段可以设成CPPTYPE_UNORDERED_MAP
-    optional CppType cpp_type                       = 85001 [default = CPPTYPE_UNKNOWN];
+    optional CppContainerType cpp_type              = 85001;
 }
 
 /*
