@@ -14,7 +14,7 @@ MiniRPC支持所有的标量数据类型及其编码格式，包括：
 string和bytes对应std::string。
 
 ### MiniRPC所做的扩展与修改
-MiniRPC对repeated和map修饰的类型做了扩展，允许自定义其对应的C++容器类型。语法为[(mrpc.cpp_type) = XXX]，其中XXX表示C++容器类型。
+MiniRPC对repeated和map修饰的类型做了扩展，允许自定义其对应的C++容器类型。语法为`[(mrpc.cpp_type) = XXX]`，其中XXX表示C++容器类型。
 代码示例如下：
 ```protobuf
 syntax = "proto3";
@@ -35,12 +35,12 @@ map字段支持扩展的C++容器类型为std::map和std::unordered_map。
 
 如果不做声明，repeated修饰的字段默认为std::vector类型，map修饰的字段默认为std::map类型。
 
-需要注意的是，repeated bool类型不允许声明为vector类型（如果不声明则默认就是vector类型，因此必须强制声明为其他类型）。因为标准库的std::vector<bool>类型是陷阱，应该禁止使用。
+需要注意的是，repeated bool类型不允许声明为vector类型（如果不声明则默认就是vector类型，因此必须强制声明为其他类型）。因为标准库中的`std::vector<bool>`类型是陷阱，应该禁止使用。
 
 与官方实现的不同之处：
-1. repeated修饰的字段在proto2中必须强制声明为[packed = true]（如果字段允许设置packed）。这是因为proto2一开始设计的编码格式不够紧凑，后来引入了更为高效紧凑的编码格式（声明为[packed = true]）。而proto3就是使用的这样紧凑的编码格式。我们有理由总是使用更为高效的编码格式。
+1. repeated修饰的字段在proto2中必须强制声明为`[packed = true]`（如果字段允许设置packed）。这是因为proto2一开始设计的编码格式不够紧凑，后来引入了更为高效紧凑的编码格式（声明为`[packed = true]`）。而proto3就是使用的这样紧凑的编码格式。我们有理由总是使用更为高效的编码格式。
 2. MiniRPC不会对string的文本格式做检查（这是业务层应该做的事情）。
-3. 枚举类型成员变量对应生成代码的类型为int32_t,而不是enum的具体类型，这样有利于控制反射机制的代码规模。此外，有些脚本语言（比如Lua）会把枚举对应为字符串，代码执行效率很低，因此在实际应用中经常会使用int32类型代替enum类型。
+3. 枚举类型成员变量对应生成代码的类型为int32_t，而不是enum的具体类型，这样有利于控制反射机制的代码规模。此外，有些脚本语言（比如Lua）会把枚举对应为字符串，代码执行效率很低，因此在实际应用中经常会使用int32类型代替enum类型。
 
 ### 消息类型(message)
 MiniRPC的实现中支持message类型，但不支持message内嵌套定义message和enum(对应于C++的内部类)。
