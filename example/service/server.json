@@ -1,7 +1,11 @@
 {
     "common": {
-        "app_name": "ExampleServer",
-        "loop_interval": 1000
+        "app_name": "ServerExample",
+        "loop_interval": 1000,
+        "log_path": "./log",
+        "log_type": "Roll",
+        "mrpc_log_level": "TRACE",
+        "log_level": "TRACE"
     },
     "server": {
         "service": [

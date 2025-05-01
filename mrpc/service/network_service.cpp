@@ -420,7 +420,7 @@ int NetworkService::Bind(const NetworkConfig& config)
             break;
     }
 
-    MRPC_LOG_ERROR("Invalid protocol {}", NetworkProtocol_Name(config.protocol));
+    MRPC_LOG_ERROR("Invalid protocol {}", NetworkProtocolConfig_Name(config.protocol));
     return ERROR_INITIALIZATION_FAILED;
 }
 

@@ -1,60 +1,61 @@
 #pragma once
 
-#include <cstdint>
 #include <format>
-#include <source_location>
+#include <string>
 #include <string_view>
-#include <utility>
+
+#include <mrpc/util/log.mrpc.h>
 
 namespace mrpc
 {
 
-enum LogLevel : int32_t
-{
-    LOGLEVEL_TRACE      = 0,
-    LOGLEVEL_DEBUG      = 1,
-    LOGLEVEL_INFO       = 2,
-    LOGLEVEL_WARNING    = 3,
-    LOGLEVEL_ERROR      = 4,
-    LOGLEVEL_CRITICAL   = 5,
-    LOGLEVEL_FATAL      = 6,
-    LOGLEVEL_MAX        = 7,
-};
-
-/* TODO log file type
-enum LogType : int32_t
-{
-    LOGTYPE_ROLL        = 1,
-    LOGTYPE_DAY         = 2,
-    LOGTYPE_HOUR        = 3,
-};
-*/
-
 class Log
 {
 public:
-    static void Init();
-    static void Fini();
+    static void Initialize(const std::string& log_path, std::string& log_file_prefix, LogType type);
+    static void Finalize();
 
-    static void SetLogLevel(LogLevel level);
-    static bool IsLevelEnabled(LogLevel level);
+    static void SetMrpcLogLevel(LogLevel level) { mrpc_log_level_ = level; }
+    static inline bool IsMrpcLevelEnabled(LogLevel level) { return level >= mrpc_log_level_; }
+
+    static void SetLogLevel(LogLevel level) { log_level_ = level; }
+    static inline bool IsLevelEnabled(LogLevel level) { return level >= log_level_; }
 
     template<typename... Args>
-    static inline void Write(LogLevel level, const std::source_location& location, std::format_string<Args...> fmt, Args&&... args)
+    static inline void Write(LogLevel level, std::format_string<Args...> fmt, Args&&... args)
     {
-        Write(level, location, std::format(fmt, std::forward<Args>(args)...));
+        Write(level, std::format(fmt, std::forward<Args>(args)...));
     }
 
-    /*
-    template<typename... Args>
-    static void Write(LogLevel level, const std::source_location& location, std::string_view fmt, Args&&... args)
-    {
-        Write(level, location, std::vformat(fmt, std::make_format_args(args...)));
-    }
-    */
+    static void Write(LogLevel level, std::string_view fmt);
+    static const char* GetFileNameFromPath(const char* name);
 
-    static void Write(LogLevel level, const std::source_location& location, std::string_view fmt);
+private:
+    static std::string log_path_;
+    static std::string log_file_prefix_;
+    static LogType log_type_;
+    static LogLevel mrpc_log_level_;
+    static LogLevel log_level_;
+
 };
+
+#define MRPC_LOG_BASE(level, fmt, ...)                                      \
+    do                                                                      \
+    {                                                                       \
+        if (!mrpc::Log::IsMrpcLevelEnabled(level))                          \
+        {                                                                   \
+            break;                                                          \
+        }                                                                   \
+        mrpc::Log::Write(level, "{}|" fmt, "[MRPC]" __VA_OPT__(,) __VA_ARGS__); \
+    } while (0)
+
+#define MRPC_LOG_TRACE(fmt, ...) MRPC_LOG_BASE(mrpc::TRACE, fmt __VA_OPT__(,) __VA_ARGS__)
+#define MRPC_LOG_DEBUG(fmt, ...) MRPC_LOG_BASE(mrpc::DEBUG, fmt __VA_OPT__(,) __VA_ARGS__)
+#define MRPC_LOG_INFO(fmt, ...)  MRPC_LOG_BASE(mrpc::INFO, fmt __VA_OPT__(,) __VA_ARGS__)
+#define MRPC_LOG_WARN(fmt, ...)  MRPC_LOG_BASE(mrpc::WARN, fmt __VA_OPT__(,) __VA_ARGS__)
+#define MRPC_LOG_ERROR(fmt, ...) MRPC_LOG_BASE(mrpc::ERROR, fmt __VA_OPT__(,) __VA_ARGS__)
+#define MRPC_LOG_CRIT(fmt, ...)  MRPC_LOG_BASE(mrpc::CRIT, fmt __VA_OPT__(,) __VA_ARGS__)
+#define MRPC_LOG_FATAL(fmt, ...) MRPC_LOG_BASE(mrpc::FATAL, fmt __VA_OPT__(,) __VA_ARGS__)
 
 #define LOG_BASE(level, fmt, ...)                                           \
     do                                                                      \
@@ -63,24 +64,16 @@ public:
         {                                                                   \
             break;                                                          \
         }                                                                   \
-        mrpc::Log::Write(level, std::source_location::current(), fmt __VA_OPT__(,) __VA_ARGS__); \
+        mrpc::Log::Write(level, "{}:{}:{}|" fmt, mrpc::Log::GetFileNameFromPath(__FILE__), __LINE__, __FUNCTION__ __VA_OPT__(,) __VA_ARGS__); \
     } while (0)
 
-#define MRPC_LOG_TRACE(fmt, ...) LOG_BASE(mrpc::LOGLEVEL_TRACE, fmt __VA_OPT__(,) __VA_ARGS__)
-#define MRPC_LOG_DEBUG(fmt, ...) LOG_BASE(mrpc::LOGLEVEL_DEBUG, fmt __VA_OPT__(,) __VA_ARGS__)
-#define MRPC_LOG_INFO(fmt, ...)  LOG_BASE(mrpc::LOGLEVEL_INFO, fmt __VA_OPT__(,) __VA_ARGS__)
-#define MRPC_LOG_WARN(fmt, ...)  LOG_BASE(mrpc::LOGLEVEL_WARNING, fmt __VA_OPT__(,) __VA_ARGS__)
-#define MRPC_LOG_ERROR(fmt, ...) LOG_BASE(mrpc::LOGLEVEL_ERROR, fmt __VA_OPT__(,) __VA_ARGS__)
-#define MRPC_LOG_CRIT(fmt, ...)  LOG_BASE(mrpc::LOGLEVEL_CRITICAL, fmt __VA_OPT__(,) __VA_ARGS__)
-#define MRPC_LOG_FATAL(fmt, ...) LOG_BASE(mrpc::LOGLEVEL_FATAL, fmt __VA_OPT__(,) __VA_ARGS__)
-
-#define LOG_TRACE(fmt, ...) LOG_BASE(mrpc::LOGLEVEL_TRACE, fmt __VA_OPT__(,) __VA_ARGS__)
-#define LOG_DEBUG(fmt, ...) LOG_BASE(mrpc::LOGLEVEL_DEBUG, fmt __VA_OPT__(,) __VA_ARGS__)
-#define LOG_INFO(fmt, ...)  LOG_BASE(mrpc::LOGLEVEL_INFO, fmt __VA_OPT__(,) __VA_ARGS__)
-#define LOG_WARN(fmt, ...)  LOG_BASE(mrpc::LOGLEVEL_WARNING, fmt __VA_OPT__(,) __VA_ARGS__)
-#define LOG_ERROR(fmt, ...) LOG_BASE(mrpc::LOGLEVEL_ERROR, fmt __VA_OPT__(,) __VA_ARGS__)
-#define LOG_CRIT(fmt, ...)  LOG_BASE(mrpc::LOGLEVEL_CRITICAL, fmt __VA_OPT__(,) __VA_ARGS__)
-#define LOG_FATAL(fmt, ...) LOG_BASE(mrpc::LOGLEVEL_FATAL, fmt __VA_OPT__(,) __VA_ARGS__)
+#define LOG_TRACE(fmt, ...) LOG_BASE(mrpc::TRACE, fmt __VA_OPT__(,) __VA_ARGS__)
+#define LOG_DEBUG(fmt, ...) LOG_BASE(mrpc::DEBUG, fmt __VA_OPT__(,) __VA_ARGS__)
+#define LOG_INFO(fmt, ...)  LOG_BASE(mrpc::INFO, fmt __VA_OPT__(,) __VA_ARGS__)
+#define LOG_WARN(fmt, ...)  LOG_BASE(mrpc::WARN, fmt __VA_OPT__(,) __VA_ARGS__)
+#define LOG_ERROR(fmt, ...) LOG_BASE(mrpc::ERROR, fmt __VA_OPT__(,) __VA_ARGS__)
+#define LOG_CRIT(fmt, ...)  LOG_BASE(mrpc::CRIT, fmt __VA_OPT__(,) __VA_ARGS__)
+#define LOG_FATAL(fmt, ...) LOG_BASE(mrpc::FATAL, fmt __VA_OPT__(,) __VA_ARGS__)
 
 #define __TRY__                                                             \
     try                                                                     \

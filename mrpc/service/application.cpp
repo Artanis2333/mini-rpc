@@ -11,6 +11,7 @@
 #include <mrpc/service/endpoint.h>
 #include <mrpc/service/protocol.h>
 #include <mrpc/service/global_proxy.h>
+#include <mrpc/util/log.h>
 #include <mrpc/util/time.h>
 
 namespace mrpc
@@ -95,9 +96,11 @@ int Application::ParseArgs(int argc, char* argv[])
         daemon(1, 0);
     }
 
-    //TODO init log
     SetCurrentThreadContextPtrQueue(&main_queue_);
 
+    Log::Initialize(config_.common.log_path, config_.common.app_name, (LogType)config_.common.log_type);
+    Log::SetMrpcLogLevel((LogLevel)config_.common.mrpc_log_level);
+    Log::SetLogLevel((LogLevel)config_.common.log_level);
     return 0;
 }
 
@@ -185,6 +188,7 @@ void Application::Finalize()
         bridge_ptr->Stop();
     }
     GlobalProxy::Stop();
+    Log::Finalize();
 }
 
 }
