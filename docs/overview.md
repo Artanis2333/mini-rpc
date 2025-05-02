@@ -16,6 +16,8 @@ MiniRPC并没有完全采用Google Protobuf的官方实现，而是以protoc插�
 * C++语言的Google Protobuf生成代码编译速度极慢。
 * 有些第三方库也同样使用了Google Protobuf，两个不同版本的Google Protobuf库或者两个不同的.so文件往往会导致符号丢失或冲突。
 
+**实际上，通过重写.proto文件生成的C++代码，可以获得一个无法拒绝的巨大优势：按需把内存对象类型用.proto定义，内存对象不仅拥有了序列化与反序列的能力，还可以充分利用C++语法和标准库函数。**
+
 MiniRPC以protoc插件的方式重写了.proto文件生成的C++代码。生成的代码很简洁，且*repeated*和*map*关键字修饰的成员变量都是使用的标准库容器。
 以示例代码来说明，如下Protobuf代码：
 ```protobuf
@@ -54,6 +56,7 @@ public:
 }
 ```
 注意到，这里直接把*repeated*修饰的字段转化成了*std::vector*对象。实际上，MiniRPC会把*repeated*修饰的字段默认转化成*std::vector*对象，*map*修饰的字段默认转化成*std::map*对象，开发者也可以自定义其标准库容器类型，目前支持*std::vector*、*std::list*、*std::map*和*std::unordered_map*，未来会添加对其他容器类型的支持。
+
 与Google Protobuf一样，MiniRPC也提供了Message对象的反射机制。
 
 想要了解MiniRPC中Protobuf的具体设计，可阅读[MiniRPC中Protobuf的具体设计](protobuf.md)。
