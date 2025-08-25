@@ -18,9 +18,9 @@ export MINI_PPC_INSTALL_PATH=${HOME}/mini-rpc
 ### protobuf
 编译安装protobuf
 ```shell
-wget -O protobuf-21.5.tar.gz https://github.com/protocolbuffers/protobuf/archive/refs/tags/v21.5.tar.gz
-tar zxf protobuf-21.5.tar.gz
-cd protobuf-21.5/
+wget -O protobuf-21.12.tar.gz https://github.com/protocolbuffers/protobuf/archive/refs/tags/v21.12.tar.gz
+tar zxf protobuf-21.12.tar.gz
+cd protobuf-21.12/
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release \
@@ -108,3 +108,4 @@ cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
 make -j 4
 make install
 ```
+
